@@ -32,14 +32,18 @@ def student_profile(student_id):
     conn = get_conn()
     try:
         with conn.cursor() as cur:
+            cur.execute("SELECT display_name FROM users WHERE id = %s", (student_id,))
+            user_row = cur.fetchone()
+            display_name = user_row[0] if user_row else ''
             cur.execute(
                 "SELECT name, title, bio, skills, hobbies, subjects, avatar_url FROM profile WHERE user_id = %s",
                 (student_id,),
             )
             row = cur.fetchone()
+        base = {'display_name': display_name}
         if not row:
-            return jsonify({'name': '', 'title': '', 'bio': '', 'skills': [], 'hobbies': [], 'subjects': [], 'avatar_url': ''})
-        return jsonify({'name': row[0], 'title': row[1], 'bio': row[2], 'skills': row[3], 'hobbies': row[4], 'subjects': row[5], 'avatar_url': row[6]})
+            return jsonify({**base, 'name': '', 'title': '', 'bio': '', 'skills': [], 'hobbies': [], 'subjects': [], 'avatar_url': ''})
+        return jsonify({**base, 'name': row[0], 'title': row[1], 'bio': row[2], 'skills': row[3], 'hobbies': row[4], 'subjects': row[5], 'avatar_url': row[6]})
     finally:
         put_conn(conn)
 

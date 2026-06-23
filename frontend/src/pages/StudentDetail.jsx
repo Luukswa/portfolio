@@ -43,21 +43,15 @@ export default function StudentDetail() {
       fetch(`/api/teacher/students/${id}/goals`).then(r => r.json()),
       fetch(`/api/teacher/students/${id}/cv`).then(r => r.json()),
     ]).then(([p, g, go, c]) => {
+      setStudentName(p.display_name || '')
       setProfile(p)
       setGrades(g)
       setGoals(go)
       setCv(c)
-      setStudentName(p.name || '')
     }).catch(() => {})
 
     fetch(`/api/profile/avatar/${id}`).then(r => {
       if (r.ok) setAvatarUrl(`/api/profile/avatar/${id}`)
-    }).catch(() => {})
-
-    // Fetch display name from the students list to show in header
-    fetch('/api/teacher/students').then(r => r.json()).then(list => {
-      const s = list.find(x => x.id === parseInt(id))
-      if (s) setStudentName(s.display_name)
     }).catch(() => {})
   }, [user, id])
 
