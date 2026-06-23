@@ -1,9 +1,18 @@
 import json
-from flask import Blueprint, request, jsonify, session
+import os
+from flask import Blueprint, request, jsonify, session, send_from_directory
+from werkzeug.utils import secure_filename
 from middleware import require_auth
 from db import get_conn, put_conn
 
 profile_bp = Blueprint('profile', __name__)
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads', 'avatars')
+ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
+
+
+def _ext(filename):
+    return filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
 
 
 def _ensure_table(cur):
@@ -17,14 +26,19 @@ def _ensure_table(cur):
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS profile (
-            user_id  INTEGER PRIMARY KEY,
-            name     TEXT  NOT NULL DEFAULT '',
-            title    TEXT  NOT NULL DEFAULT '',
-            bio      TEXT  NOT NULL DEFAULT '',
-            skills   JSONB NOT NULL DEFAULT '[]',
-            hobbies  JSONB NOT NULL DEFAULT '[]',
-            subjects JSONB NOT NULL DEFAULT '[]'
+            user_id   INTEGER PRIMARY KEY,
+            name      TEXT  NOT NULL DEFAULT '',
+            title     TEXT  NOT NULL DEFAULT '',
+            bio       TEXT  NOT NULL DEFAULT '',
+            skills    JSONB NOT NULL DEFAULT '[]',
+            hobbies   JSONB NOT NULL DEFAULT '[]',
+            subjects  JSONB NOT NULL DEFAULT '[]',
+            avatar_url TEXT NOT NULL DEFAULT ''
         )
+    """)
+    # Add avatar_url to existing tables that pre-date this column
+    cur.execute("""
+        ALTER TABLE profile ADD COLUMN IF NOT EXISTS avatar_url TEXT NOT NULL DEFAULT ''
     """)
 
 
@@ -38,19 +52,20 @@ def get_profile():
             _ensure_table(cur)
             conn.commit()
             cur.execute(
-                "SELECT name, title, bio, skills, hobbies, subjects FROM profile WHERE user_id = %s",
+                "SELECT name, title, bio, skills, hobbies, subjects, avatar_url FROM profile WHERE user_id = %s",
                 (user_id,),
             )
             row = cur.fetchone()
         if not row:
-            return jsonify({'name': '', 'title': '', 'bio': '', 'skills': [], 'hobbies': [], 'subjects': []})
+            return jsonify({'name': '', 'title': '', 'bio': '', 'skills': [], 'hobbies': [], 'subjects': [], 'avatar_url': ''})
         return jsonify({
-            'name':     row[0],
-            'title':    row[1],
-            'bio':      row[2],
-            'skills':   row[3],
-            'hobbies':  row[4],
-            'subjects': row[5],
+            'name':       row[0],
+            'title':      row[1],
+            'bio':        row[2],
+            'skills':     row[3],
+            'hobbies':    row[4],
+            'subjects':   row[5],
+            'avatar_url': row[6],
         })
     finally:
         put_conn(conn)
@@ -91,3 +106,73 @@ def save_profile():
         return jsonify({'ok': True})
     finally:
         put_conn(conn)
+
+
+@profile_bp.route('/api/profile/avatar', methods=['POST'])
+@require_auth
+def upload_avatar():
+    user_id = session['user']['id']
+    if 'file' not in request.files:
+        return jsonify({'error': 'Geen bestand'}), 400
+    file = request.files['file']
+    if not file.filename or _ext(file.filename) not in ALLOWED_EXT:
+        return jsonify({'error': 'Ongeldig bestandstype'}), 400
+
+    ext = _ext(file.filename)
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+    # Remove previous avatar for this user
+    for f in os.listdir(UPLOAD_DIR):
+        if f.startswith(f'{user_id}.'):
+            os.remove(os.path.join(UPLOAD_DIR, f))
+
+    filename = f'{user_id}.{ext}'
+    file.save(os.path.join(UPLOAD_DIR, filename))
+
+    avatar_url = f'/api/profile/avatar/{user_id}'
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            _ensure_table(cur)
+            cur.execute(
+                """
+                INSERT INTO profile (user_id, avatar_url)
+                VALUES (%s, %s)
+                ON CONFLICT (user_id) DO UPDATE SET avatar_url = EXCLUDED.avatar_url
+                """,
+                (user_id, avatar_url),
+            )
+            conn.commit()
+    finally:
+        put_conn(conn)
+
+    return jsonify({'avatar_url': avatar_url})
+
+
+@profile_bp.route('/api/profile/avatar/<int:user_id>', methods=['DELETE'])
+@require_auth
+def delete_avatar(user_id):
+    if session['user']['id'] != user_id:
+        return jsonify({'error': 'Forbidden'}), 403
+    if os.path.exists(UPLOAD_DIR):
+        for f in os.listdir(UPLOAD_DIR):
+            if f.startswith(f'{user_id}.'):
+                os.remove(os.path.join(UPLOAD_DIR, f))
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE profile SET avatar_url = '' WHERE user_id = %s", (user_id,))
+            conn.commit()
+    finally:
+        put_conn(conn)
+    return jsonify({'ok': True})
+
+
+@profile_bp.route('/api/profile/avatar/<int:user_id>')
+def get_avatar(user_id):
+    if not os.path.exists(UPLOAD_DIR):
+        return '', 404
+    for f in os.listdir(UPLOAD_DIR):
+        if f.startswith(f'{user_id}.'):
+            return send_from_directory(UPLOAD_DIR, f)
+    return '', 404

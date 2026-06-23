@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 export default function OverMij() {
+  const { user } = useAuth()
   const [profile, setProfile] = useState(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const [newSkill, setNewSkill] = useState('')
   const [newHobbyIcon, setNewHobbyIcon] = useState('')
@@ -34,8 +37,35 @@ export default function OverMij() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draft),
       })
-      if (res.ok) { setProfile(draft); setDraft(null); setEditing(false) }
+      if (res.ok) { setProfile(p => ({ ...p, ...draft })); setDraft(null); setEditing(false) }
     } finally { setSaving(false) }
+  }
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      const res = await fetch('/api/profile/avatar', { method: 'POST', body: form })
+      if (res.ok) {
+        const { avatar_url } = await res.json()
+        // Add cache-bust so browser reloads the new image
+        const busted = `${avatar_url}?t=${Date.now()}`
+        setProfile(p => ({ ...p, avatar_url: busted }))
+        setDraft(d => ({ ...d, avatar_url: busted }))
+      }
+    } finally { setUploading(false) }
+  }
+
+  async function handleAvatarDelete() {
+    if (!user) return
+    const res = await fetch(`/api/profile/avatar/${user.id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setProfile(p => ({ ...p, avatar_url: '' }))
+      setDraft(d => ({ ...d, avatar_url: '' }))
+    }
   }
 
   function addSkill() {
@@ -60,6 +90,7 @@ export default function OverMij() {
   if (!profile) return <div className="empty-state">Laden…</div>
 
   const data = editing ? draft : profile
+  const avatarUrl = data?.avatar_url || ''
 
   return (
     <>
@@ -87,14 +118,59 @@ export default function OverMij() {
         {/* Bio */}
         <div className="card" style={{ gridColumn: '1 / -1' }}>
           <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
-            <div style={{
-              width: '80px', height: '80px', borderRadius: '50%', flexShrink: 0,
-              background: 'var(--primary-light)', border: '2px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '2rem', color: 'var(--primary)',
-            }}>
-              👤
+
+            {/* Avatar */}
+            <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <div style={{ position: 'relative', width: '80px', height: '80px' }}>
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Profielfoto"
+                    style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', display: 'block', border: '2px solid var(--border)' }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '80px', height: '80px', borderRadius: '50%',
+                    background: 'var(--primary-light)', border: '2px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '2rem', color: 'var(--primary)',
+                  }}>
+                    👤
+                  </div>
+                )}
+                {editing && (
+                  <label style={{
+                    position: 'absolute', inset: 0, borderRadius: '50%',
+                    background: uploading ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.32)',
+                    cursor: uploading ? 'wait' : 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#fff', fontSize: '1.3rem',
+                    transition: 'background 0.15s',
+                  }}
+                    title="Profielfoto wijzigen"
+                  >
+                    {uploading ? '…' : '📷'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      style={{ display: 'none' }}
+                      onChange={handleAvatarUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                )}
+              </div>
+              {editing && avatarUrl && (
+                <button
+                  onClick={handleAvatarDelete}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: '0.75rem', padding: 0 }}
+                >
+                  Verwijderen
+                </button>
+              )}
             </div>
+
+            {/* Text fields */}
             <div style={{ flex: 1, minWidth: 0 }}>
               {editing ? (
                 <>
@@ -153,13 +229,7 @@ export default function OverMij() {
           </div>
           {editing && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <input
-                className="edit-input"
-                value={newSkill}
-                onChange={e => setNewSkill(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addSkill()}
-                placeholder="Skill toevoegen…"
-              />
+              <input className="edit-input" value={newSkill} onChange={e => setNewSkill(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSkill()} placeholder="Skill toevoegen…" />
               <button className="btn btn-primary btn-sm" onClick={addSkill}>+</button>
             </div>
           )}
@@ -187,20 +257,8 @@ export default function OverMij() {
           </div>
           {editing && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <input
-                className="edit-input"
-                value={newHobbyIcon}
-                onChange={e => setNewHobbyIcon(e.target.value)}
-                placeholder="🎯"
-                style={{ width: '60px', textAlign: 'center', flexShrink: 0 }}
-              />
-              <input
-                className="edit-input"
-                value={newHobbyLabel}
-                onChange={e => setNewHobbyLabel(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addHobby()}
-                placeholder="Hobby toevoegen…"
-              />
+              <input className="edit-input" value={newHobbyIcon} onChange={e => setNewHobbyIcon(e.target.value)} placeholder="🎯" style={{ width: '60px', textAlign: 'center', flexShrink: 0 }} />
+              <input className="edit-input" value={newHobbyLabel} onChange={e => setNewHobbyLabel(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHobby()} placeholder="Hobby toevoegen…" />
               <button className="btn btn-primary btn-sm" onClick={addHobby}>+</button>
             </div>
           )}
@@ -222,13 +280,7 @@ export default function OverMij() {
           </div>
           {editing && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <input
-                className="edit-input"
-                value={newSubject}
-                onChange={e => setNewSubject(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addSubject()}
-                placeholder="Vak toevoegen…"
-              />
+              <input className="edit-input" value={newSubject} onChange={e => setNewSubject(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSubject()} placeholder="Vak toevoegen…" />
               <button className="btn btn-primary btn-sm" onClick={addSubject}>+</button>
             </div>
           )}
