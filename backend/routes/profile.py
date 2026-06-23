@@ -7,6 +7,8 @@ from db import get_conn, put_conn
 
 profile_bp = Blueprint('profile', __name__)
 
+import re
+
 UPLOADS_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads')
 ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
 
@@ -15,8 +17,26 @@ def _ext(filename):
     return filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
 
 
-def _user_dir(user_id):
-    return os.path.join(UPLOADS_BASE, str(user_id))
+def _safe(display_name):
+    name = display_name.lower().strip()
+    name = re.sub(r'[^\w]', '_', name)
+    name = re.sub(r'_+', '_', name)
+    return name.strip('_') or 'gebruiker'
+
+
+def _user_dir(display_name, user_id):
+    """Returns uploads/{safe_name}_{user_id}/  e.g. uploads/luuk_hennink_1/"""
+    return os.path.join(UPLOADS_BASE, f'{_safe(display_name)}_{user_id}')
+
+
+def _find_user_dir(user_id):
+    """Locate an existing user folder by the _{user_id} suffix (name may have changed)."""
+    suffix = f'_{user_id}'
+    if os.path.exists(UPLOADS_BASE):
+        for entry in os.scandir(UPLOADS_BASE):
+            if entry.is_dir() and entry.name.endswith(suffix):
+                return entry.path
+    return None
 
 
 def _ensure_table(cur):
@@ -123,7 +143,8 @@ def upload_avatar():
         return jsonify({'error': 'Ongeldig bestandstype'}), 400
 
     ext = _ext(file.filename)
-    user_dir = _user_dir(user_id)
+    display_name = session['user']['display_name']
+    user_dir = _find_user_dir(user_id) or _user_dir(display_name, user_id)
     os.makedirs(user_dir, exist_ok=True)
 
     # Remove previous avatar for this user
@@ -159,8 +180,8 @@ def upload_avatar():
 def delete_avatar(user_id):
     if session['user']['id'] != user_id:
         return jsonify({'error': 'Forbidden'}), 403
-    user_dir = _user_dir(user_id)
-    if os.path.exists(user_dir):
+    user_dir = _find_user_dir(user_id)
+    if user_dir and os.path.exists(user_dir):
         for f in os.listdir(user_dir):
             if f.startswith('avatar.'):
                 os.remove(os.path.join(user_dir, f))
@@ -176,8 +197,8 @@ def delete_avatar(user_id):
 
 @profile_bp.route('/api/profile/avatar/<int:user_id>')
 def get_avatar(user_id):
-    user_dir = _user_dir(user_id)
-    if os.path.exists(user_dir):
+    user_dir = _find_user_dir(user_id)
+    if user_dir:
         for f in os.listdir(user_dir):
             if f.startswith('avatar.'):
                 return send_from_directory(user_dir, f)
