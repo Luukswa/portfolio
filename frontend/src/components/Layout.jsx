@@ -51,9 +51,9 @@ export default function Layout() {
         </div>
         <div className="header-right">
           <span className="header-name">{user.display_name}</span>
-          {user.is_admin && <span className="role-chip">Admin</span>}
+          {user.is_admin && <span className="role-chip">Beheerder</span>}
           {user.is_admin && (
-            <button className="btn-signout" onClick={() => navigate('/beheer')} title="Gebruikersbeheer">⚙</button>
+            <button className="btn-signout" onClick={() => navigate('/beheer')} title="Gebruikersbeheer" style={{ fontSize: '1rem' }}>⚙</button>
           )}
           <button className="btn-signout" onClick={logout}>Afmelden</button>
         </div>

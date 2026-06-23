@@ -15,7 +15,7 @@ export default function Beheer() {
       .catch(() => {})
   }, [user])
 
-  async function toggleAdmin(id, current) {
+  async function toggleBeheerder(id, current) {
     await fetch(`/api/admin/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -70,12 +70,12 @@ export default function Beheer() {
                 <td style={{ color: 'var(--text-soft)', fontSize: '0.82rem' }}>{fmt(u.last_login)}</td>
                 <td>
                   <button
-                    onClick={() => toggleAdmin(u.id, u.is_admin)}
+                    onClick={() => toggleBeheerder(u.id, u.is_admin)}
                     className={`badge ${u.is_admin ? 'badge-primary' : 'badge-gray'}`}
                     style={{ cursor: 'pointer', border: 'none' }}
-                    title={u.is_admin ? 'Admin — klik om te verwijderen' : 'Gebruiker — klik om admin te maken'}
+                    title={u.is_admin ? 'Beheerder — klik om te verwijderen' : 'Gebruiker — klik om beheerder te maken'}
                   >
-                    {u.is_admin ? 'Admin' : 'Gebruiker'}
+                    {u.is_admin ? 'Beheerder' : 'Gebruiker'}
                   </button>
                 </td>
               </tr>
