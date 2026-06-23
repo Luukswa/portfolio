@@ -445,11 +445,3 @@ tbody tr:hover td { background: var(--primary-light); }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modalIn { from { opacity: 0; transform: scale(0.97) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-
-/* ── PRINT — only CV preview visible ──────────── */
-@media print {
-  header, nav, .page-header, .btn { display: none !important; }
-  body { background: white !important; }
-  .app-shell, .app-body, main { display: block !important; padding: 0 !important; margin: 0 !important; }
-  #cv-preview { max-width: 100% !important; width: 100% !important; box-shadow: none !important; border-radius: 0 !important; }
-}

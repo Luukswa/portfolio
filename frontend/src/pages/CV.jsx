@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 const EMPTY = { naam: '', adres: '', postcode: '', telefoon: '', email: '', hobbies: [], vaardigheden: [], werkervaring: [] }
 const EMPTY_WERK = { bedrijf: '', functie: '', periode: '', beschrijving: '' }
 
-/* ── Tag input ─────────────────────────────────────── */
 function TagInput({ tags, onChange, placeholder }) {
   const [input, setInput] = useState('')
   function add() {
@@ -17,9 +16,9 @@ function TagInput({ tags, onChange, placeholder }) {
       {tags.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
           {tags.map(t => (
-            <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'var(--primary-dim)', color: 'var(--primary)', borderRadius: '20px', padding: '3px 10px', fontSize: '0.82rem', fontWeight: 600 }}>
+            <span key={t} className="badge badge-primary" style={{ gap: '4px' }}>
               {t}
-              <button onClick={() => onChange(tags.filter(x => x !== t))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', lineHeight: 1, padding: 0 }}>×</button>
+              <button onClick={() => onChange(tags.filter(x => x !== t))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', lineHeight: 1, padding: 0, marginLeft: '2px' }}>×</button>
             </span>
           ))}
         </div>
@@ -34,7 +33,6 @@ function TagInput({ tags, onChange, placeholder }) {
   )
 }
 
-/* ── Werkervaring edit row ──────────────────────────── */
 function WerkRow({ entry, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(entry)
@@ -72,124 +70,28 @@ function WerkRow({ entry, onUpdate, onDelete }) {
   )
 }
 
-/* ── CV Preview (styled to match template) ─────────── */
-function CVPreview({ cv, avatarUrl }) {
-  const BG      = '#0d3535'
-  const STRIP_R = '#1b5252'
-  const CIRCLE  = '#7b8c27'
-  const LABEL   = '#a8d0d0'
-
-  const section = (title, content) => (
-    <div style={{ marginBottom: '14px' }}>
-      <div style={{ fontWeight: 700, fontSize: '0.58rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: LABEL, marginBottom: '5px', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: '3px' }}>{title}</div>
-      <div style={{ fontSize: '0.62rem', lineHeight: 1.75, color: '#fff' }}>{content}</div>
-    </div>
-  )
-
+function Field({ label, value }) {
+  if (!value) return null
   return (
-    <div id="cv-preview" style={{
-      display: 'flex', width: '100%', maxWidth: '660px', margin: '0 auto',
-      aspectRatio: '210/297', background: BG,
-      fontFamily: "'Titillium Web', 'Barlow', sans-serif",
-      color: '#fff', position: 'relative', overflow: 'hidden',
-      borderRadius: '6px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-    }}>
-      {/* Left strip — Mijn CV */}
-      <div style={{ width: '46px', flexShrink: 0, background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
-        <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '0.14em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-          Mijn CV
-        </span>
-      </div>
-
-      {/* Main content */}
-      <div style={{ flex: 1, padding: '26px 18px 26px 20px', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0, overflow: 'hidden' }}>
-
-        {/* Photo circle — top right, overlapping */}
-        <div style={{
-          position: 'absolute', top: '-40px', right: '-40px',
-          width: '148px', height: '148px', borderRadius: '50%',
-          background: CIRCLE, overflow: 'hidden',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2,
-        }}>
-          {avatarUrl
-            ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.75)', textAlign: 'center', padding: '0 20px', lineHeight: 1.5 }}>Foto via<br />"Over mij"</span>
-          }
-        </div>
-
-        {/* Naam header */}
-        <div style={{ marginBottom: '20px', paddingRight: '90px' }}>
-          <div style={{ fontSize: '0.55rem', color: LABEL, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '3px' }}>Naam</div>
-          <div style={{ fontSize: '1rem', fontWeight: 700 }}>{cv.naam || <span style={{ opacity: 0.35 }}>Naam invullen</span>}</div>
-        </div>
-
-        {/* Two columns */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px', flex: 1 }}>
-          {/* Left */}
-          <div>
-            {section('Profiel',
-              <>{cv.naam && <div>{cv.naam}</div>}{cv.adres && <div>{cv.adres}</div>}{cv.postcode && <div>{cv.postcode}</div>}
-              {!cv.naam && !cv.adres && !cv.postcode && <span style={{ opacity: 0.35 }}>Nog niet ingevuld</span>}</>
-            )}
-            {section('Contact',
-              <>{cv.telefoon && <div><span style={{ opacity: 0.6 }}>Tel: </span>{cv.telefoon}</div>}
-              {cv.email && <div><span style={{ opacity: 0.6 }}>E-mail: </span>{cv.email}</div>}
-              {!cv.telefoon && !cv.email && <span style={{ opacity: 0.35 }}>Nog niet ingevuld</span>}</>
-            )}
-            {section("Hobby's",
-              cv.hobbies?.length > 0
-                ? cv.hobbies.map((h, i) => <div key={i}>• {h}</div>)
-                : <span style={{ opacity: 0.35 }}>Nog niet ingevuld</span>
-            )}
-          </div>
-
-          {/* Right */}
-          <div>
-            {section('Vaardigheden / Kwaliteiten',
-              cv.vaardigheden?.length > 0
-                ? cv.vaardigheden.map((v, i) => <div key={i}>• {v}</div>)
-                : <span style={{ opacity: 0.35 }}>Nog niet ingevuld</span>
-            )}
-            {section('Werkervaring',
-              cv.werkervaring?.length > 0
-                ? cv.werkervaring.map((w, i) => (
-                  <div key={i} style={{ marginBottom: '8px' }}>
-                    <div style={{ fontWeight: 700 }}>{w.bedrijf}{w.functie ? ` · ${w.functie}` : ''}</div>
-                    {w.periode && <div style={{ opacity: 0.65, fontSize: '0.56rem' }}>{w.periode}</div>}
-                    {w.beschrijving && <div style={{ marginTop: '1px', opacity: 0.85 }}>{w.beschrijving}</div>}
-                  </div>
-                ))
-                : <span style={{ opacity: 0.35 }}>Nog niet ingevuld</span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Right decorative strip */}
-      <div style={{ width: '42px', flexShrink: 0, background: STRIP_R, borderLeft: '1px solid rgba(255,255,255,0.06)' }} />
+    <div style={{ marginBottom: '8px' }}>
+      <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)', marginBottom: '2px' }}>{label}</div>
+      <div style={{ fontSize: '0.88rem', color: 'var(--text)' }}>{value}</div>
     </div>
   )
 }
 
-/* ── Main page ─────────────────────────────────────── */
 export default function CV() {
   const { user } = useAuth()
-  const [cv, setCv]         = useState(null)
+  const [cv, setCv]           = useState(null)
   const [editing, setEditing] = useState(false)
-  const [form, setForm]     = useState(EMPTY)
-  const [saving, setSaving] = useState(false)
-  const [avatarUrl, setAvatarUrl] = useState(null)
+  const [form, setForm]       = useState(EMPTY)
+  const [saving, setSaving]   = useState(false)
   const [addingWerk, setAddingWerk] = useState(false)
   const [newWerk, setNewWerk] = useState(EMPTY_WERK)
 
   useEffect(() => {
     fetch('/api/cv').then(r => r.json()).then(d => { setCv(d); setForm(d) }).catch(() => {})
-    if (user?.id) {
-      fetch(`/api/profile/avatar/${user.id}`).then(r => {
-        if (r.ok) setAvatarUrl(`/api/profile/avatar/${user.id}`)
-      }).catch(() => {})
-    }
-  }, [user?.id])
+  }, [])
 
   function field(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
 
@@ -227,17 +129,13 @@ export default function CV() {
               <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'Opslaan…' : 'Opslaan'}</button>
             </>
           ) : (
-            <>
-              <button className="btn btn-ghost" onClick={() => window.print()}>🖨 Afdrukken</button>
-              <button className="btn btn-primary" onClick={() => { setForm(cv); setEditing(true) }}>Bewerken</button>
-            </>
+            <button className="btn btn-primary" onClick={() => { setForm(cv); setEditing(true) }}>Bewerken</button>
           )}
         </div>
       </div>
 
       {editing ? (
-        <div>
-          {/* Persoonlijke gegevens */}
+        <>
           <div className="card" style={{ marginBottom: '14px' }}>
             <div className="section-title" style={{ marginTop: 0 }}>Persoonlijke gegevens</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -249,29 +147,27 @@ export default function CV() {
             </div>
           </div>
 
-          {/* Vaardigheden */}
           <div className="card" style={{ marginBottom: '14px' }}>
             <div className="section-title" style={{ marginTop: 0 }}>Vaardigheden / Kwaliteiten</div>
             <TagInput tags={form.vaardigheden} onChange={v => setForm(f => ({ ...f, vaardigheden: v }))} placeholder="Vaardigheid toevoegen en Enter drukken…" />
           </div>
 
-          {/* Hobby's */}
           <div className="card" style={{ marginBottom: '14px' }}>
             <div className="section-title" style={{ marginTop: 0 }}>Hobby's</div>
             <TagInput tags={form.hobbies} onChange={v => setForm(f => ({ ...f, hobbies: v }))} placeholder="Hobby toevoegen en Enter drukken…" />
           </div>
 
-          {/* Werkervaring */}
           <div className="card" style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div className="section-title" style={{ marginTop: 0, marginBottom: 0 }}>Werkervaring</div>
               {!addingWerk && <button className="btn btn-ghost btn-sm" onClick={() => setAddingWerk(true)}>+ Toevoegen</button>}
             </div>
-
             {form.werkervaring.map((w, i) => (
               <WerkRow key={i} entry={w} onUpdate={u => updateWerk(i, u)} onDelete={() => deleteWerk(i)} />
             ))}
-
+            {form.werkervaring.length === 0 && !addingWerk && (
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Nog geen werkervaring toegevoegd.</div>
+            )}
             {addingWerk && (
               <div style={{ background: 'var(--surface2)', borderRadius: '8px', padding: '12px', border: '1.5px solid var(--primary)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
@@ -287,9 +183,54 @@ export default function CV() {
               </div>
             )}
           </div>
-        </div>
+        </>
       ) : (
-        <CVPreview cv={cv} avatarUrl={avatarUrl} />
+        <>
+          {/* View mode */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div className="card">
+              <div className="section-title" style={{ marginTop: 0 }}>Persoonlijke gegevens</div>
+              <Field label="Naam" value={cv.naam} />
+              <Field label="Adres" value={cv.adres} />
+              <Field label="Postcode en woonplaats" value={cv.postcode} />
+              {!cv.naam && !cv.adres && !cv.postcode && <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Nog niet ingevuld.</div>}
+            </div>
+            <div className="card">
+              <div className="section-title" style={{ marginTop: 0 }}>Contact</div>
+              <Field label="Telefoon" value={cv.telefoon} />
+              <Field label="E-mail" value={cv.email} />
+              {!cv.telefoon && !cv.email && <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Nog niet ingevuld.</div>}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+            <div className="card">
+              <div className="section-title" style={{ marginTop: 0 }}>Vaardigheden / Kwaliteiten</div>
+              {cv.vaardigheden?.length > 0
+                ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>{cv.vaardigheden.map(v => <span key={v} className="badge badge-primary">{v}</span>)}</div>
+                : <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Nog niet ingevuld.</div>}
+            </div>
+            <div className="card">
+              <div className="section-title" style={{ marginTop: 0 }}>Hobby's</div>
+              {cv.hobbies?.length > 0
+                ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>{cv.hobbies.map(h => <span key={h} className="badge badge-blue">{h}</span>)}</div>
+                : <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Nog niet ingevuld.</div>}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="section-title" style={{ marginTop: 0 }}>Werkervaring</div>
+            {cv.werkervaring?.length > 0
+              ? cv.werkervaring.map((w, i) => (
+                <div key={i} style={{ padding: '10px 0', borderBottom: i < cv.werkervaring.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{w.bedrijf}{w.functie ? ` · ${w.functie}` : ''}</div>
+                  {w.periode && <div style={{ fontSize: '0.78rem', color: 'var(--text-soft)', marginTop: '2px' }}>{w.periode}</div>}
+                  {w.beschrijving && <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginTop: '4px' }}>{w.beschrijving}</div>}
+                </div>
+              ))
+              : <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Nog niet ingevuld.</div>}
+          </div>
+        </>
       )}
     </>
   )
