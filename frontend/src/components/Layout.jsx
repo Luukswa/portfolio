@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useBranding } from '../context/BrandingContext'
 import { useDarkMode } from '../context/DarkModeContext'
@@ -7,7 +7,9 @@ import { useDarkMode } from '../context/DarkModeContext'
 export default function Layout() {
   const { user, logout } = useAuth()
   const { appName, logoUrl } = useBranding()
-  const { dark, toggleDark } = useDarkMode()
+  useDarkMode()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === '1')
 
   useEffect(() => {
@@ -65,7 +67,13 @@ export default function Layout() {
               {collapsed ? '▶' : '◀'}
             </button>
           </div>
-          {/* Nav items — add .nav-item elements here as pages are built */}
+          <div
+            className={`nav-item${location.pathname === '/over-mij' ? ' active' : ''}`}
+            onClick={() => navigate('/over-mij')}
+          >
+            <span className="ni">👤</span>
+            <span className="ni-label">Over mij</span>
+          </div>
         </nav>
         <main>
           <Outlet />

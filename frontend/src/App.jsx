@@ -4,6 +4,7 @@ import { BrandingProvider } from './context/BrandingContext'
 import { DarkModeProvider } from './context/DarkModeContext'
 import Layout from './components/Layout'
 import Home from './pages/Home'
+import OverMij from './pages/OverMij'
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
+              <Route path="/over-mij" element={<OverMij />} />
             </Route>
           </Routes>
         </AuthProvider>
