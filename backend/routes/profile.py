@@ -7,12 +7,16 @@ from db import get_conn, put_conn
 
 profile_bp = Blueprint('profile', __name__)
 
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads', 'avatars')
+UPLOADS_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads')
 ALLOWED_EXT = {'jpg', 'jpeg', 'png', 'webp', 'gif'}
 
 
 def _ext(filename):
     return filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+
+
+def _user_dir(user_id):
+    return os.path.join(UPLOADS_BASE, str(user_id))
 
 
 def _ensure_table(cur):
@@ -119,15 +123,16 @@ def upload_avatar():
         return jsonify({'error': 'Ongeldig bestandstype'}), 400
 
     ext = _ext(file.filename)
-    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    user_dir = _user_dir(user_id)
+    os.makedirs(user_dir, exist_ok=True)
 
     # Remove previous avatar for this user
-    for f in os.listdir(UPLOAD_DIR):
-        if f.startswith(f'{user_id}.'):
-            os.remove(os.path.join(UPLOAD_DIR, f))
+    for f in os.listdir(user_dir):
+        if f.startswith('avatar.'):
+            os.remove(os.path.join(user_dir, f))
 
-    filename = f'{user_id}.{ext}'
-    file.save(os.path.join(UPLOAD_DIR, filename))
+    filename = f'avatar.{ext}'
+    file.save(os.path.join(user_dir, filename))
 
     avatar_url = f'/api/profile/avatar/{user_id}'
     conn = get_conn()
@@ -154,10 +159,11 @@ def upload_avatar():
 def delete_avatar(user_id):
     if session['user']['id'] != user_id:
         return jsonify({'error': 'Forbidden'}), 403
-    if os.path.exists(UPLOAD_DIR):
-        for f in os.listdir(UPLOAD_DIR):
-            if f.startswith(f'{user_id}.'):
-                os.remove(os.path.join(UPLOAD_DIR, f))
+    user_dir = _user_dir(user_id)
+    if os.path.exists(user_dir):
+        for f in os.listdir(user_dir):
+            if f.startswith('avatar.'):
+                os.remove(os.path.join(user_dir, f))
     conn = get_conn()
     try:
         with conn.cursor() as cur:
@@ -170,9 +176,9 @@ def delete_avatar(user_id):
 
 @profile_bp.route('/api/profile/avatar/<int:user_id>')
 def get_avatar(user_id):
-    if not os.path.exists(UPLOAD_DIR):
-        return '', 404
-    for f in os.listdir(UPLOAD_DIR):
-        if f.startswith(f'{user_id}.'):
-            return send_from_directory(UPLOAD_DIR, f)
+    user_dir = _user_dir(user_id)
+    if os.path.exists(user_dir):
+        for f in os.listdir(user_dir):
+            if f.startswith('avatar.'):
+                return send_from_directory(user_dir, f)
     return '', 404
