@@ -98,6 +98,13 @@ export default function Layout() {
             <span className="ni">🎯</span>
             <span className="ni-label">Doelen</span>
           </div>
+          <div
+            className={`nav-item${location.pathname === '/mijn-cv' ? ' active' : ''}`}
+            onClick={() => navigate('/mijn-cv')}
+          >
+            <span className="ni">📄</span>
+            <span className="ni-label">Mijn CV</span>
+          </div>
         </nav>
         <main>
           <Outlet />
