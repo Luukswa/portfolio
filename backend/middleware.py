@@ -19,3 +19,14 @@ def require_admin(f):
             return jsonify({'error': 'Forbidden'}), 403
         return f(*args, **kwargs)
     return decorated
+
+def require_teacher(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        user = session.get('user')
+        if not user:
+            return jsonify({'error': 'Unauthorized'}), 401
+        if not (user.get('is_teacher') or user.get('is_admin')):
+            return jsonify({'error': 'Forbidden'}), 403
+        return f(*args, **kwargs)
+    return decorated

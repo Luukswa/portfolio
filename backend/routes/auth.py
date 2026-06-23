@@ -30,6 +30,7 @@ def sso_callback():
     conn = get_conn()
     try:
         with conn.cursor() as cur:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_teacher BOOLEAN NOT NULL DEFAULT false")
             cur.execute(
                 """
                 INSERT INTO users (azure_id, email, display_name, last_login)
@@ -38,7 +39,7 @@ def sso_callback():
                     SET email        = EXCLUDED.email,
                         display_name = EXCLUDED.display_name,
                         last_login   = NOW()
-                RETURNING id, is_admin
+                RETURNING id, is_admin, is_teacher
                 """,
                 user_data,
             )
@@ -51,6 +52,7 @@ def sso_callback():
             'email': user_data['email'],
             'display_name': user_data['display_name'],
             'is_admin': row[1],
+            'is_teacher': row[2],
         }
     finally:
         put_conn(conn)

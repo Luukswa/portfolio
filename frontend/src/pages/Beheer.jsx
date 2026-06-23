@@ -9,19 +9,16 @@ export default function Beheer() {
 
   useEffect(() => {
     if (user && !user.is_admin) { navigate('/'); return }
-    fetch('/api/admin/users')
-      .then(r => r.json())
-      .then(setUsers)
-      .catch(() => {})
+    fetch('/api/admin/users').then(r => r.json()).then(setUsers).catch(() => {})
   }, [user])
 
-  async function toggleBeheerder(id, current) {
+  async function toggle(id, field, current) {
     await fetch(`/api/admin/users/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_admin: !current }),
+      body: JSON.stringify({ [field]: !current }),
     })
-    setUsers(u => u.map(x => x.id === id ? { ...x, is_admin: !current } : x))
+    setUsers(u => u.map(x => x.id === id ? { ...x, [field]: !current } : x))
   }
 
   function fmt(iso) {
@@ -47,7 +44,8 @@ export default function Beheer() {
               <th>Gebruiker</th>
               <th>E-mail</th>
               <th>Laatste login</th>
-              <th>Rol</th>
+              <th>Beheerder</th>
+              <th>Docent</th>
             </tr>
           </thead>
           <tbody>
@@ -70,12 +68,22 @@ export default function Beheer() {
                 <td style={{ color: 'var(--text-soft)', fontSize: '0.82rem' }}>{fmt(u.last_login)}</td>
                 <td>
                   <button
-                    onClick={() => toggleBeheerder(u.id, u.is_admin)}
+                    onClick={() => toggle(u.id, 'is_admin', u.is_admin)}
                     className={`badge ${u.is_admin ? 'badge-primary' : 'badge-gray'}`}
                     style={{ cursor: 'pointer', border: 'none' }}
-                    title={u.is_admin ? 'Beheerder — klik om te verwijderen' : 'Gebruiker — klik om beheerder te maken'}
+                    title={u.is_admin ? 'Klik om te verwijderen' : 'Klik om te maken'}
                   >
-                    {u.is_admin ? 'Beheerder' : 'Gebruiker'}
+                    {u.is_admin ? 'Ja' : 'Nee'}
+                  </button>
+                </td>
+                <td>
+                  <button
+                    onClick={() => toggle(u.id, 'is_teacher', u.is_teacher)}
+                    className={`badge ${u.is_teacher ? 'badge-blue' : 'badge-gray'}`}
+                    style={{ cursor: 'pointer', border: 'none' }}
+                    title={u.is_teacher ? 'Klik om te verwijderen' : 'Klik om te maken'}
+                  >
+                    {u.is_teacher ? 'Ja' : 'Nee'}
                   </button>
                 </td>
               </tr>

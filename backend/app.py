@@ -22,6 +22,7 @@ from routes.admin import admin_bp
 from routes.grades import grades_bp
 from routes.goals import goals_bp
 from routes.cv import cv_bp
+from routes.teacher import teacher_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(branding_bp)
@@ -30,6 +31,7 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(grades_bp)
 app.register_blueprint(goals_bp)
 app.register_blueprint(cv_bp)
+app.register_blueprint(teacher_bp)
 
 DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'dist')
 

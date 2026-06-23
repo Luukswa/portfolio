@@ -11,8 +11,10 @@ def list_users():
     conn = get_conn()
     try:
         with conn.cursor() as cur:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_teacher BOOLEAN NOT NULL DEFAULT false")
+            conn.commit()
             cur.execute(
-                "SELECT id, display_name, email, last_login, is_admin FROM users ORDER BY display_name"
+                "SELECT id, display_name, email, last_login, is_admin, is_teacher FROM users ORDER BY display_name"
             )
             rows = cur.fetchall()
         return jsonify([{
@@ -21,6 +23,7 @@ def list_users():
             'email':        r[2],
             'last_login':   r[3].isoformat() if r[3] else None,
             'is_admin':     r[4],
+            'is_teacher':   r[5],
         } for r in rows])
     finally:
         put_conn(conn)
@@ -33,10 +36,10 @@ def update_user(user_id):
     conn = get_conn()
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE users SET is_admin = %s WHERE id = %s",
-                (bool(data.get('is_admin')), user_id),
-            )
+            if 'is_admin' in data:
+                cur.execute("UPDATE users SET is_admin = %s WHERE id = %s", (bool(data['is_admin']), user_id))
+            if 'is_teacher' in data:
+                cur.execute("UPDATE users SET is_teacher = %s WHERE id = %s", (bool(data['is_teacher']), user_id))
             conn.commit()
         return jsonify({'ok': True})
     finally:
