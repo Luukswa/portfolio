@@ -1,6 +1,45 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate, useParams } from 'react-router-dom'
+
+function Lightbox({ url, title, onClose }) {
+  const close = useCallback((e) => {
+    if (e.target === e.currentTarget) onClose()
+  }, [onClose])
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      onClick={close}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.82)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '24px',
+      }}
+    >
+      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          {title && <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.92rem', fontFamily: 'var(--title)' }}>{title}</span>}
+          <button
+            onClick={onClose}
+            style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          >✕</button>
+        </div>
+        <img
+          src={url}
+          alt={title || ''}
+          style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 60px)', objectFit: 'contain', borderRadius: '8px', display: 'block' }}
+        />
+      </div>
+    </div>
+  )
+}
 
 function Section({ title, children }) {
   return (
@@ -34,6 +73,7 @@ export default function StudentDetail() {
   const [refs, setRefs]         = useState(null)
   const [werkstukken, setWerkstukken] = useState(null)
   const [avatarUrl, setAvatarUrl] = useState(null)
+  const [lightbox, setLightbox] = useState(null) // { url, title }
 
   useEffect(() => {
     if (user && !user.is_teacher && !user.is_admin) { navigate('/'); return }
@@ -190,21 +230,32 @@ export default function StudentDetail() {
         {werkstukken.length === 0 ? <Empty /> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
             {werkstukken.map(w => (
-              <div key={w.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)' }}>
+              <div key={w.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' }}>
                 {w.foto_url
-                  ? <img src={`${w.foto_url}?t=1`} alt="" style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }} />
+                  ? <img src={`${w.foto_url}?t=1`} alt="" style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block', cursor: 'pointer' }} onClick={() => setLightbox({ url: w.foto_url, title: w.vak || '' })} />
                   : <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.78rem' }}>Geen foto</div>
                 }
-                <div style={{ padding: '10px 12px', fontSize: '0.82rem' }}>
+                <div style={{ padding: '10px 12px', fontSize: '0.82rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                   {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
                   {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
                   {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
+                  {w.foto_url && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ marginTop: '8px', alignSelf: 'flex-start' }}
+                      onClick={() => setLightbox({ url: w.foto_url, title: w.vak || '' })}
+                    >
+                      🔍 Bekijk foto
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </Section>
+
+      {lightbox && <Lightbox url={lightbox.url} title={lightbox.title} onClose={() => setLightbox(null)} />}
 
       {/* CV */}
       <Section title="CV">
