@@ -91,6 +91,13 @@ export default function Layout() {
             <span className="ni">📊</span>
             <span className="ni-label">Mijn cijfers</span>
           </div>
+          <div
+            className={`nav-item${location.pathname === '/doelen' ? ' active' : ''}`}
+            onClick={() => navigate('/doelen')}
+          >
+            <span className="ni">🎯</span>
+            <span className="ni-label">Doelen</span>
+          </div>
         </nav>
         <main>
           <Outlet />

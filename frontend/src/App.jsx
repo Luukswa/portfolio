@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import OverMij from './pages/OverMij'
 import Beheer from './pages/Beheer'
 import Cijfers from './pages/Cijfers'
+import Doelen from './pages/Doelen'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
               <Route path="/over-mij" element={<OverMij />} />
               <Route path="/beheer" element={<Beheer />} />
               <Route path="/mijn-cijfers" element={<Cijfers />} />
+              <Route path="/doelen" element={<Doelen />} />
             </Route>
           </Routes>
         </AuthProvider>

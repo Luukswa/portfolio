@@ -20,12 +20,14 @@ from routes.branding import branding_bp
 from routes.profile import profile_bp
 from routes.admin import admin_bp
 from routes.grades import grades_bp
+from routes.goals import goals_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(branding_bp)
 app.register_blueprint(profile_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(grades_bp)
+app.register_blueprint(goals_bp)
 
 DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'dist')
 
