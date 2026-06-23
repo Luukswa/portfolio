@@ -6,6 +6,7 @@ export default function Overzicht() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [students, setStudents] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     if (user && !user.is_teacher && !user.is_admin) { navigate('/'); return }
@@ -19,17 +20,36 @@ export default function Overzicht() {
 
   if (!students) return <div className="empty-state">Laden…</div>
 
+  const filtered = students.filter(s =>
+    s.display_name.toLowerCase().includes(search.toLowerCase()) ||
+    s.email.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
     <>
       <div className="page-header">
         <div>
           <h2>Leerlingoverzicht</h2>
-          <div className="subtitle">{students.length} gebruiker{students.length !== 1 ? 's' : ''}</div>
+          <div className="subtitle">{filtered.length} van {students.length} gebruiker{students.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
 
+      <div className="toolbar" style={{ marginBottom: '16px' }}>
+        <input
+          className="edit-input"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Zoeken op naam of e-mail…"
+          style={{ maxWidth: '340px' }}
+          autoComplete="off"
+        />
+        {search && (
+          <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Wissen</button>
+        )}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
-        {students.map(s => (
+        {filtered.map(s => (
           <div
             key={s.id}
             className="card"
@@ -55,8 +75,8 @@ export default function Overzicht() {
         ))}
       </div>
 
-      {students.length === 0 && (
-        <div className="empty-state">Nog geen gebruikers gevonden.</div>
+      {filtered.length === 0 && (
+        <div className="empty-state">{search ? 'Geen resultaten gevonden.' : 'Nog geen gebruikers.'}</div>
       )}
     </>
   )
