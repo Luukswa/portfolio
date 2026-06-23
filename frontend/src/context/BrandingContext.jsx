@@ -1,12 +1,12 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
-const BrandingContext = createContext({ appName: 'Portfolio', primaryColor: '#4f46e5', logoUrl: '' })
+const BrandingContext = createContext({ appName: 'Portfolio', primaryColor: '#0d4c92', logoUrl: '/logo.png' })
 
 export function BrandingProvider({ children }) {
   const [branding, setBranding] = useState({
     appName: 'Portfolio',
-    primaryColor: '#4f46e5',
-    logoUrl: '',
+    primaryColor: '#0d4c92',
+    logoUrl: '/logo.png',
   })
 
   useEffect(() => {
