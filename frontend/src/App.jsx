@@ -6,6 +6,7 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import OverMij from './pages/OverMij'
 import Beheer from './pages/Beheer'
+import Cijfers from './pages/Cijfers'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/over-mij" element={<OverMij />} />
               <Route path="/beheer" element={<Beheer />} />
+              <Route path="/mijn-cijfers" element={<Cijfers />} />
             </Route>
           </Routes>
         </AuthProvider>

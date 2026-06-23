@@ -84,6 +84,13 @@ export default function Layout() {
             <span className="ni">👤</span>
             <span className="ni-label">Over mij</span>
           </div>
+          <div
+            className={`nav-item${location.pathname === '/mijn-cijfers' ? ' active' : ''}`}
+            onClick={() => navigate('/mijn-cijfers')}
+          >
+            <span className="ni">📊</span>
+            <span className="ni-label">Mijn cijfers</span>
+          </div>
         </nav>
         <main>
           <Outlet />
