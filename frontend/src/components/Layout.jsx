@@ -50,9 +50,6 @@ export default function Layout() {
         <div className="header-right">
           <span className="header-name">{user.display_name}</span>
           {user.is_admin && <span className="role-chip">Admin</span>}
-          <button className="btn-signout" onClick={toggleDark} title={dark ? 'Lichte modus' : 'Donkere modus'}>
-            {dark ? '☀' : '☾'}
-          </button>
           <button className="btn-signout" onClick={logout}>Afmelden</button>
         </div>
       </header>
