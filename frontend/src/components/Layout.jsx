@@ -53,7 +53,7 @@ export default function Layout() {
           <span className="header-name">{user.display_name}</span>
           {user.is_admin && <span className="role-chip">Beheerder</span>}
           {user.is_admin && (
-            <button className="btn-signout" onClick={() => navigate('/beheer')} title="Gebruikersbeheer" style={{ fontSize: '1rem' }}>⚙</button>
+            <button className="btn-signout" onClick={() => navigate('/beheer')} title="Gebruikersbeheer">⚙</button>
           )}
           <button className="btn-signout" onClick={logout}>Afmelden</button>
         </div>
@@ -69,6 +69,13 @@ export default function Layout() {
             >
               {collapsed ? '▶' : '◀'}
             </button>
+          </div>
+          <div
+            className={`nav-item${location.pathname === '/' ? ' active' : ''}`}
+            onClick={() => navigate('/')}
+          >
+            <span className="ni">🏠</span>
+            <span className="ni-label">Home</span>
           </div>
           <div
             className={`nav-item${location.pathname === '/over-mij' ? ' active' : ''}`}
