@@ -106,6 +106,13 @@ export default function Layout() {
             <span className="ni">📄</span>
             <span className="ni-label">Mijn CV</span>
           </div>
+          <div
+            className={`nav-item${location.pathname === '/mijn-referenties' ? ' active' : ''}`}
+            onClick={() => navigate('/mijn-referenties')}
+          >
+            <span className="ni">📝</span>
+            <span className="ni-label">Referenties</span>
+          </div>
           {(user.is_teacher || user.is_admin) && (
             <>
               <div className="nav-section-label" style={{ marginTop: '12px' }}>Docenten</div>

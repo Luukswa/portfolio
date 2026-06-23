@@ -9,6 +9,7 @@ import Beheer from './pages/Beheer'
 import Cijfers from './pages/Cijfers'
 import Doelen from './pages/Doelen'
 import CV from './pages/CV'
+import Referenties from './pages/Referenties'
 import Overzicht from './pages/Overzicht'
 import StudentDetail from './pages/StudentDetail'
 
@@ -25,6 +26,7 @@ export default function App() {
               <Route path="/mijn-cijfers" element={<Cijfers />} />
               <Route path="/doelen" element={<Doelen />} />
               <Route path="/mijn-cv" element={<CV />} />
+              <Route path="/mijn-referenties" element={<Referenties />} />
               <Route path="/overzicht" element={<Overzicht />} />
               <Route path="/overzicht/:id" element={<StudentDetail />} />
             </Route>

@@ -80,6 +80,28 @@ def student_goals(student_id):
         put_conn(conn)
 
 
+@teacher_bp.route('/api/teacher/students/<int:student_id>/referenties')
+@require_teacher
+def student_referenties(student_id):
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT ref1_datum, ref1_naam, ref1_vak, ref1_opmerking, ref2_datum, ref2_naam, ref2_vak, ref2_opmerking FROM referenties WHERE user_id = %s",
+                (student_id,),
+            )
+            row = cur.fetchone()
+        if not row:
+            empty = {'datum': '', 'naam': '', 'vak': '', 'opmerking': ''}
+            return jsonify({'ref1': dict(empty), 'ref2': dict(empty)})
+        return jsonify({
+            'ref1': {'datum': row[0], 'naam': row[1], 'vak': row[2], 'opmerking': row[3]},
+            'ref2': {'datum': row[4], 'naam': row[5], 'vak': row[6], 'opmerking': row[7]},
+        })
+    finally:
+        put_conn(conn)
+
+
 @teacher_bp.route('/api/teacher/students/<int:student_id>/cv')
 @require_teacher
 def student_cv(student_id):
