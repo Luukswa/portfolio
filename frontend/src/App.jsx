@@ -5,6 +5,7 @@ import { DarkModeProvider } from './context/DarkModeContext'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import OverMij from './pages/OverMij'
+import Beheer from './pages/Beheer'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
               <Route path="/over-mij" element={<OverMij />} />
+              <Route path="/beheer" element={<Beheer />} />
             </Route>
           </Routes>
         </AuthProvider>

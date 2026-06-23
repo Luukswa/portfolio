@@ -18,10 +18,12 @@ app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production
 from routes.auth import auth_bp
 from routes.branding import branding_bp
 from routes.profile import profile_bp
+from routes.admin import admin_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(branding_bp)
 app.register_blueprint(profile_bp)
+app.register_blueprint(admin_bp)
 
 DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'dist')
 

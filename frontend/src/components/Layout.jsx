@@ -52,6 +52,9 @@ export default function Layout() {
         <div className="header-right">
           <span className="header-name">{user.display_name}</span>
           {user.is_admin && <span className="role-chip">Admin</span>}
+          {user.is_admin && (
+            <button className="btn-signout" onClick={() => navigate('/beheer')} title="Gebruikersbeheer">⚙</button>
+          )}
           <button className="btn-signout" onClick={logout}>Afmelden</button>
         </div>
       </header>
