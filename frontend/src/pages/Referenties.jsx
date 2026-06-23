@@ -8,7 +8,7 @@ const LABELS = {
   ref2: 'Referentie 2 — Stageleerkracht',
 }
 
-function RefCard({ label, ref: r }) {
+function RefCard({ label, data: r }) {
   const hasContent = r.naam || r.datum || r.vak || r.opmerking
   return (
     <div className="card" style={{ flex: 1 }}>
@@ -98,8 +98,8 @@ export default function Referenties() {
           </>
         ) : (
           <>
-            <RefCard label={LABELS.ref1} ref={refs.ref1} />
-            <RefCard label={LABELS.ref2} ref={refs.ref2} />
+            <RefCard label={LABELS.ref1} data={refs.ref1} />
+            <RefCard label={LABELS.ref2} data={refs.ref2} />
           </>
         )}
       </div>
