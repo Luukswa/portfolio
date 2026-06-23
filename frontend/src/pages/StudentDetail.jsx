@@ -32,6 +32,7 @@ export default function StudentDetail() {
   const [goals, setGoals]       = useState(null)
   const [cv, setCv]             = useState(null)
   const [refs, setRefs]         = useState(null)
+  const [werkstukken, setWerkstukken] = useState(null)
   const [avatarUrl, setAvatarUrl] = useState(null)
 
   useEffect(() => {
@@ -44,13 +45,15 @@ export default function StudentDetail() {
       fetch(`/api/teacher/students/${id}/goals`).then(r => r.json()),
       fetch(`/api/teacher/students/${id}/cv`).then(r => r.json()),
       fetch(`/api/teacher/students/${id}/referenties`).then(r => r.json()),
-    ]).then(([p, g, go, c, rf]) => {
+      fetch(`/api/teacher/students/${id}/werkstukken`).then(r => r.json()),
+    ]).then(([p, g, go, c, rf, wk]) => {
       setStudentName(p.display_name || '')
       setProfile(p)
       setGrades(g)
       setGoals(go)
       setCv(c)
       setRefs(rf)
+      setWerkstukken(wk)
     }).catch(() => {})
 
     fetch(`/api/profile/avatar/${id}`).then(r => {
@@ -58,7 +61,7 @@ export default function StudentDetail() {
     }).catch(() => {})
   }, [user, id])
 
-  const loaded = profile && grades && goals && cv && refs
+  const loaded = profile && grades && goals && cv && refs && werkstukken
 
   if (!loaded) return <div className="empty-state">Laden…</div>
 
@@ -180,6 +183,27 @@ export default function StudentDetail() {
             </div>
           )
         })()}
+      </Section>
+
+      {/* Werkstukken */}
+      <Section title={`Werkstukken${werkstukken.length ? ` (${werkstukken.length})` : ''}`}>
+        {werkstukken.length === 0 ? <Empty /> : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+            {werkstukken.map(w => (
+              <div key={w.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)' }}>
+                {w.foto_url
+                  ? <img src={`${w.foto_url}?t=1`} alt="" style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }} />
+                  : <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.78rem' }}>Geen foto</div>
+                }
+                <div style={{ padding: '10px 12px', fontSize: '0.82rem' }}>
+                  {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
+                  {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
+                  {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
 
       {/* CV */}

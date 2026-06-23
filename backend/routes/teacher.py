@@ -80,6 +80,22 @@ def student_goals(student_id):
         put_conn(conn)
 
 
+@teacher_bp.route('/api/teacher/students/<int:student_id>/werkstukken')
+@require_teacher
+def student_werkstukken(student_id):
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, vak, gemaakt_bij, datum, trots_omdat, foto_url FROM werkstukken WHERE user_id = %s ORDER BY created_at DESC",
+                (student_id,),
+            )
+            rows = cur.fetchall()
+        return jsonify([{'id': r[0], 'vak': r[1], 'gemaakt_bij': r[2], 'datum': r[3], 'trots_omdat': r[4], 'foto_url': r[5]} for r in rows])
+    finally:
+        put_conn(conn)
+
+
 @teacher_bp.route('/api/teacher/students/<int:student_id>/referenties')
 @require_teacher
 def student_referenties(student_id):
