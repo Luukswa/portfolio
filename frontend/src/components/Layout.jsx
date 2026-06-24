@@ -43,7 +43,7 @@ export default function Layout() {
         <div className="header-left">
           <div className="logo-mark">
             {logoUrl
-              ? <div className="logo-icon"><img src={logoUrl} alt="" style={{ height: '34px', width: 'auto', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} /></div>
+              ? <div className="logo-icon"><img src={logoUrl} alt="" style={{ height: '28px', maxWidth: '64px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} /></div>
               : null
             }
             <span className="logo-text">{appName}</span>
