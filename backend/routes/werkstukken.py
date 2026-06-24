@@ -31,8 +31,22 @@ def _find_user_dir(user_id):
                 return entry.path
     return None
 
-def _foto_dir(user_dir, werk_id):
-    return os.path.join(user_dir, 'werkstukken', str(werk_id))
+def _werk_dir_name(vak, werk_id):
+    safe_vak = _safe(vak) if vak else 'werkstuk'
+    return f'{safe_vak}_{werk_id}'
+
+def _make_werk_dir(user_dir, vak, werk_id):
+    return os.path.join(user_dir, 'werkstukken', _werk_dir_name(vak, werk_id))
+
+def _find_werk_dir(user_dir, werk_id):
+    """Locate the werkstuk folder by scanning for _{werk_id} suffix."""
+    base = os.path.join(user_dir, 'werkstukken')
+    suffix = f'_{werk_id}'
+    if os.path.exists(base):
+        for entry in os.scandir(base):
+            if entry.is_dir() and entry.name.endswith(suffix):
+                return entry.path
+    return None
 
 
 def _ensure_table(cur):
@@ -96,7 +110,7 @@ def add_werkstuk():
             if file and file.filename and _ext(file.filename) in ALLOWED_EXT:
                 ext = _ext(file.filename)
                 user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
-                foto_subdir = _foto_dir(user_dir, new_id)
+                foto_subdir = _make_werk_dir(user_dir, vak, new_id)
                 os.makedirs(foto_subdir, exist_ok=True)
                 file.save(os.path.join(foto_subdir, f'foto.{ext}'))
                 foto_url = f'/api/werkstukken/{new_id}/foto'
@@ -137,8 +151,8 @@ def delete_werkstuk(werk_id):
             conn.commit()
         user_dir = _find_user_dir(user_id)
         if user_dir:
-            foto_subdir = _foto_dir(user_dir, werk_id)
-            if os.path.exists(foto_subdir):
+            foto_subdir = _find_werk_dir(user_dir, werk_id)
+            if foto_subdir:
                 try: shutil.rmtree(foto_subdir)
                 except: pass
         return jsonify({'ok': True})
@@ -157,11 +171,23 @@ def upload_foto(werk_id):
         return jsonify({'error': 'Ongeldig bestandstype'}), 400
 
     ext = _ext(file.filename)
+    conn2 = get_conn()
+    try:
+        with conn2.cursor() as cur:
+            cur.execute("SELECT vak FROM werkstukken WHERE id=%s AND user_id=%s", (werk_id, user_id))
+            row2 = cur.fetchone()
+    finally:
+        put_conn(conn2)
+    if not row2:
+        return jsonify({'error': 'Niet gevonden'}), 404
+    vak = row2[0]
+
     user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
-    foto_subdir = _foto_dir(user_dir, werk_id)
-    if os.path.exists(foto_subdir):
-        try: shutil.rmtree(foto_subdir)
+    old_dir = _find_werk_dir(user_dir, werk_id)
+    if old_dir:
+        try: shutil.rmtree(old_dir)
         except: pass
+    foto_subdir = _make_werk_dir(user_dir, vak, werk_id)
     os.makedirs(foto_subdir, exist_ok=True)
 
     file.save(os.path.join(foto_subdir, f'foto.{ext}'))
@@ -192,8 +218,8 @@ def get_foto(werk_id):
         return '', 404
     user_dir = _find_user_dir(row[0])
     if user_dir:
-        foto_subdir = _foto_dir(user_dir, werk_id)
-        if os.path.exists(foto_subdir):
+        foto_subdir = _find_werk_dir(user_dir, werk_id)
+        if foto_subdir:
             for f in os.listdir(foto_subdir):
                 if f.startswith('foto.'):
                     return send_from_directory(foto_subdir, f)

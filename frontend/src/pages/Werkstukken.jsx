@@ -104,7 +104,7 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
       <div style={{ padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {editing ? (
           <>
-            <div className="form-group" style={{ marginBottom: 0 }}><label>Vak</label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" /></div>
+            <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: 'var(--danger, #e53e3e)' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Dit heb ik gemaakt bij</label><input className="edit-input" value={form.gemaakt_bij} onChange={set('gemaakt_bij')} placeholder="Bijv. een opdracht, stage…" /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" value={form.datum} onChange={set('datum')} placeholder="dd-mm-jjjj" /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Ik ben hier trots op omdat</label><textarea className="edit-input" value={form.trots_omdat} onChange={set('trots_omdat')} rows={3} placeholder="Vertel waarom je hier trots op bent…" /></div>
@@ -165,7 +165,7 @@ function AddForm({ onAdded, onCancel }) {
     <div style={{ background: 'var(--surface)', border: '1.5px solid var(--primary)', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
       <PhotoArea fotoUrl={previewUrl} cacheKey="preview" editing onUpload={pickPhoto} />
       <form onSubmit={submit} style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div className="form-group" style={{ marginBottom: 0 }}><label>Vak</label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" autoFocus /></div>
+        <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: 'var(--danger, #e53e3e)' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required autoFocus /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Dit heb ik gemaakt bij</label><input className="edit-input" value={form.gemaakt_bij} onChange={set('gemaakt_bij')} placeholder="Bijv. een opdracht, stage…" /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" value={form.datum} onChange={set('datum')} placeholder="dd-mm-jjjj" /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Ik ben hier trots op omdat</label><textarea className="edit-input" value={form.trots_omdat} onChange={set('trots_omdat')} rows={3} placeholder="Vertel waarom je hier trots op bent…" /></div>
