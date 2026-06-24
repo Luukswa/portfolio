@@ -165,13 +165,9 @@ header {
 }
 .header-left:hover { background: rgba(255,255,255,.09); }
 
-.logo-mark { display: flex; align-items: center; gap: 10px; }
+.logo-mark { display: flex; align-items: center; gap: 12px; }
 
-.logo-icon {
-  padding: 5px 8px; background: rgba(255,255,255,0.15);
-  border-radius: 8px; display: flex; align-items: center;
-  justify-content: center; border: 1px solid rgba(255,255,255,0.2);
-}
+.logo-icon { display: flex; align-items: center; justify-content: center; }
 
 .logo-text {
   font-family: var(--title); font-size: 1.05rem;
