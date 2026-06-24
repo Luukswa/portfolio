@@ -197,10 +197,9 @@ export default function Beheer() {
                 </label>
                 {logoUrl && (
                   <button
-                    className="btn btn-ghost btn-sm"
-                    style={{ color: 'var(--red)' }}
                     onClick={handleLogoDelete}
                     disabled={uploadingLogo}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: '0.83rem', padding: 0 }}
                   >
                     Logo verwijderen
                   </button>
