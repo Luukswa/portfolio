@@ -132,14 +132,14 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
 }
 
 function AddForm({ onAdded, onCancel }) {
-  const [form, setForm]           = useState(EMPTY)
-  const [pendingFile, setPending] = useState(null)
-  const [previewUrl, setPreview]  = useState(null)
-  const [saving, setSaving]       = useState(false)
+  const [form, setForm]       = useState(EMPTY)
+  const [previewUrl, setPreview] = useState(null)
+  const [saving, setSaving]   = useState(false)
+  const fileRef               = useRef(null) // ref avoids stale-closure on fast clicks
 
   function set(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
   function pickPhoto(file) {
-    setPending(file)
+    fileRef.current = file
     const reader = new FileReader()
     reader.onload = (e) => setPreview(e.target.result)
     reader.readAsDataURL(file)
@@ -152,10 +152,10 @@ function AddForm({ onAdded, onCancel }) {
       const res  = await fetch('/api/werkstukken', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       const item = await res.json()
       let fotoUrl = ''
-      if (pendingFile) {
-        const fd = new FormData(); fd.append('file', pendingFile)
+      if (fileRef.current) {
+        const fd = new FormData(); fd.append('file', fileRef.current)
         const fr = await fetch(`/api/werkstukken/${item.id}/foto`, { method: 'POST', body: fd })
-        fotoUrl = (await fr.json()).foto_url
+        if (fr.ok) fotoUrl = (await fr.json()).foto_url || ''
       }
       onAdded({ ...item, foto_url: fotoUrl })
     } finally { setSaving(false) }
