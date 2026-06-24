@@ -149,15 +149,15 @@ function AddForm({ onAdded, onCancel }) {
     e.preventDefault()
     setSaving(true)
     try {
-      const res  = await fetch('/api/werkstukken', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      const fd = new FormData()
+      fd.append('vak',         form.vak)
+      fd.append('gemaakt_bij', form.gemaakt_bij)
+      fd.append('datum',       form.datum)
+      fd.append('trots_omdat', form.trots_omdat)
+      if (fileRef.current) fd.append('file', fileRef.current)
+      const res  = await fetch('/api/werkstukken', { method: 'POST', body: fd })
       const item = await res.json()
-      let fotoUrl = ''
-      if (fileRef.current) {
-        const fd = new FormData(); fd.append('file', fileRef.current)
-        const fr = await fetch(`/api/werkstukken/${item.id}/foto`, { method: 'POST', body: fd })
-        if (fr.ok) fotoUrl = (await fr.json()).foto_url || ''
-      }
-      onAdded({ ...item, foto_url: fotoUrl })
+      onAdded(item)
     } finally { setSaving(false) }
   }
 

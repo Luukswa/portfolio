@@ -72,18 +72,37 @@ def get_werkstukken():
 @require_auth
 def add_werkstuk():
     user_id = session['user']['id']
-    data = request.get_json(force=True)
+    vak         = request.form.get('vak', '')
+    gemaakt_bij = request.form.get('gemaakt_bij', '')
+    datum       = request.form.get('datum', '')
+    trots_omdat = request.form.get('trots_omdat', '')
+    file        = request.files.get('file')
+
     conn = get_conn()
     try:
         with conn.cursor() as cur:
             _ensure_table(cur)
             cur.execute(
                 "INSERT INTO werkstukken (user_id, vak, gemaakt_bij, datum, trots_omdat) VALUES (%s,%s,%s,%s,%s) RETURNING id",
-                (user_id, data.get('vak',''), data.get('gemaakt_bij',''), data.get('datum',''), data.get('trots_omdat','')),
+                (user_id, vak, gemaakt_bij, datum, trots_omdat),
             )
             new_id = cur.fetchone()[0]
+
+            foto_url = ''
+            if file and file.filename and _ext(file.filename) in ALLOWED_EXT:
+                ext = _ext(file.filename)
+                user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
+                os.makedirs(user_dir, exist_ok=True)
+                for f in os.listdir(user_dir):
+                    if f.startswith(f'werkstuk_{new_id}.'):
+                        try: os.remove(os.path.join(user_dir, f))
+                        except: pass
+                file.save(os.path.join(user_dir, f'werkstuk_{new_id}.{ext}'))
+                foto_url = f'/api/werkstukken/{new_id}/foto'
+                cur.execute("UPDATE werkstukken SET foto_url=%s WHERE id=%s", (foto_url, new_id))
+
             conn.commit()
-        return jsonify({'id': new_id, 'vak': data.get('vak',''), 'gemaakt_bij': data.get('gemaakt_bij',''), 'datum': data.get('datum',''), 'trots_omdat': data.get('trots_omdat',''), 'foto_url': ''}), 201
+        return jsonify({'id': new_id, 'vak': vak, 'gemaakt_bij': gemaakt_bij, 'datum': datum, 'trots_omdat': trots_omdat, 'foto_url': foto_url}), 201
     finally:
         put_conn(conn)
 
