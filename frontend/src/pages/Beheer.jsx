@@ -11,8 +11,8 @@ const THEME_META = {
   },
   genseler: {
     label: "'t Genseler huisstijl",
-    description: 'Zomerlucht cyaan · Golven blauw · Morgenrood rood',
-    swatches: ['#00bcdf', '#006684', '#ed1c24'],
+    description: 'Diep teal · Licht cyaan accent · Morgenrood rood',
+    swatches: ['#006684', '#00bcdf', '#ed1c24'],
   },
 }
 
