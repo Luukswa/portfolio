@@ -18,8 +18,8 @@ def get_pool():
         _pool = ConnectionPool(_dsn(), min_size=1, max_size=10, open=True)
     return _pool
 
-def get_conn():
-    return get_pool().getconn()
+def get_conn(timeout=5):
+    return get_pool().getconn(timeout=timeout)
 
 def put_conn(conn):
     get_pool().putconn(conn)

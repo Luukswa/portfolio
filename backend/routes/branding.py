@@ -9,18 +9,24 @@ VALID_THEMES = {'standaard', 'genseler'}
 ALLOWED_LOGO_EXT = {'jpg', 'jpeg', 'png', 'webp', 'svg'}
 LOGO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads', 'branding')
 
+_settings_ready = False
+
 
 def _ext(filename):
     return filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
 
 
 def _ensure_settings_table(cur):
+    global _settings_ready
+    if _settings_ready:
+        return
     cur.execute("""
         CREATE TABLE IF NOT EXISTS settings (
             key   TEXT PRIMARY KEY,
             value TEXT NOT NULL DEFAULT ''
         )
     """)
+    _settings_ready = True
 
 
 def _get_setting(cur, key, default=''):
@@ -64,20 +70,12 @@ def branding():
 
 @branding_bp.route('/api/config/logo')
 def get_logo():
-    conn = get_conn()
-    try:
-        with conn.cursor() as cur:
-            _ensure_settings_table(cur)
-            conn.commit()
-            logo_ext = _get_setting(cur, 'logo_ext', '')
-    finally:
-        put_conn(conn)
-    if not logo_ext:
+    if not os.path.isdir(LOGO_DIR):
         return '', 404
-    logo_file = f'logo.{logo_ext}'
-    if not os.path.exists(os.path.join(LOGO_DIR, logo_file)):
-        return '', 404
-    return send_from_directory(LOGO_DIR, logo_file)
+    for name in os.listdir(LOGO_DIR):
+        if name.startswith('logo.'):
+            return send_from_directory(LOGO_DIR, name)
+    return '', 404
 
 
 @branding_bp.route('/api/admin/branding', methods=['PUT'])
