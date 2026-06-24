@@ -4,7 +4,9 @@ const EMPTY = { vak: '', gemaakt_bij: '', datum: '', trots_omdat: '' }
 
 function PhotoArea({ fotoUrl, cacheKey, editing, onUpload }) {
   const inputRef = useRef()
-  const src = fotoUrl ? `${fotoUrl}?t=${cacheKey}` : null
+  const src = fotoUrl
+    ? (fotoUrl.startsWith('blob:') ? fotoUrl : `${fotoUrl}?t=${cacheKey}`)
+    : null
 
   if (!editing) {
     return src ? (
