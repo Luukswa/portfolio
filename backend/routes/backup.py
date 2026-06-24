@@ -1,6 +1,8 @@
+import decimal
 import json
 import os
 import re
+import shutil
 from datetime import datetime
 from flask import Blueprint, jsonify
 from middleware import require_admin
@@ -13,12 +15,27 @@ except ImportError:
 
 backup_bp = Blueprint('backup', __name__)
 
-BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'backups')
+_ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+BACKUP_DIR = os.path.join(_ROOT, 'backups')
+UPLOADS_DIR = os.path.join(_ROOT, 'uploads')
 
-_FILENAME_RE = re.compile(r'^backup_\d{8}_\d{6}\.json$')
+_NAME_RE = re.compile(r'^backup_\d{8}_\d{6}$')
+
+
+def _dir_size(path):
+    total = 0
+    for root, _dirs, files in os.walk(path):
+        for f in files:
+            try:
+                total += os.path.getsize(os.path.join(root, f))
+            except OSError:
+                pass
+    return total
 
 
 def _serial(obj):
+    if isinstance(obj, decimal.Decimal):
+        return float(obj)
     if hasattr(obj, 'isoformat'):
         return obj.isoformat()
     raise TypeError(f'Type {type(obj)} not serializable')
@@ -64,14 +81,17 @@ def list_backups():
     os.makedirs(BACKUP_DIR, exist_ok=True)
     backups = []
     for name in os.listdir(BACKUP_DIR):
-        if not _FILENAME_RE.match(name):
+        if not _NAME_RE.match(name):
             continue
         path = os.path.join(BACKUP_DIR, name)
+        if not os.path.isdir(path):
+            continue
         stat = os.stat(path)
         backups.append({
             'name': name,
             'created_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-            'size': stat.st_size,
+            'size': _dir_size(path),
+            'has_uploads': os.path.isdir(os.path.join(path, 'uploads')),
         })
     backups.sort(key=lambda b: b['created_at'], reverse=True)
     return jsonify(backups)
@@ -91,29 +111,40 @@ def create_backup():
     data['version'] = 1
 
     os.makedirs(BACKUP_DIR, exist_ok=True)
-    name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    path = os.path.join(BACKUP_DIR, name)
-    with open(path, 'w', encoding='utf-8') as f:
+    name = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    backup_dir = os.path.join(BACKUP_DIR, name)
+    os.makedirs(backup_dir)
+
+    with open(os.path.join(backup_dir, 'data.json'), 'w', encoding='utf-8') as f:
         json.dump(data, f, default=_serial, ensure_ascii=False, indent=2)
 
-    stat = os.stat(path)
+    has_uploads = os.path.isdir(UPLOADS_DIR)
+    if has_uploads:
+        shutil.copytree(UPLOADS_DIR, os.path.join(backup_dir, 'uploads'))
+
+    stat = os.stat(backup_dir)
     return jsonify({
         'name': name,
         'created_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-        'size': stat.st_size,
+        'size': _dir_size(backup_dir),
+        'has_uploads': has_uploads,
     }), 201
 
 
 @backup_bp.route('/api/admin/backups/<name>/restore', methods=['POST'])
 @require_admin
 def restore_backup(name):
-    if not _FILENAME_RE.match(name):
+    if not _NAME_RE.match(name):
         return jsonify({'error': 'Ongeldig bestand'}), 400
-    path = os.path.join(BACKUP_DIR, name)
-    if not os.path.isfile(path):
+    backup_dir = os.path.join(BACKUP_DIR, name)
+    if not os.path.isdir(backup_dir):
         return jsonify({'error': 'Back-up niet gevonden'}), 404
 
-    with open(path, 'r', encoding='utf-8') as f:
+    data_path = os.path.join(backup_dir, 'data.json')
+    if not os.path.isfile(data_path):
+        return jsonify({'error': 'Back-up beschadigd (data.json ontbreekt)'}), 500
+
+    with open(data_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
     conn = get_conn()
@@ -162,16 +193,20 @@ def restore_backup(name):
     finally:
         put_conn(conn)
 
+    uploads_backup = os.path.join(backup_dir, 'uploads')
+    if os.path.isdir(uploads_backup):
+        shutil.copytree(uploads_backup, UPLOADS_DIR, dirs_exist_ok=True)
+
     return jsonify({'ok': True})
 
 
 @backup_bp.route('/api/admin/backups/<name>', methods=['DELETE'])
 @require_admin
 def delete_backup(name):
-    if not _FILENAME_RE.match(name):
+    if not _NAME_RE.match(name):
         return jsonify({'error': 'Ongeldig bestand'}), 400
-    path = os.path.join(BACKUP_DIR, name)
-    if not os.path.isfile(path):
+    backup_dir = os.path.join(BACKUP_DIR, name)
+    if not os.path.isdir(backup_dir):
         return jsonify({'error': 'Back-up niet gevonden'}), 404
-    os.remove(path)
+    shutil.rmtree(backup_dir)
     return jsonify({'ok': True})

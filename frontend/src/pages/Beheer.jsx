@@ -341,8 +341,8 @@ export default function Beheer() {
           <div className="card">
             <div className="section-title" style={{ marginTop: 0, marginBottom: '8px' }}>Nieuwe back-up</div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-soft)', marginBottom: '16px', lineHeight: 1.6 }}>
-              Maakt een momentopname van alle portfoliogegevens en slaat deze op de server op.
-              Geüploade afbeeldingen zijn niet inbegrepen.
+              Maakt een momentopname van alle portfoliogegevens en geüploade afbeeldingen,
+              en slaat deze op de server op.
             </p>
             <button className="btn btn-primary btn-sm" onClick={createBackup} disabled={creatingBackup}>
               {creatingBackup ? 'Bezig…' : 'Nieuwe back-up maken'}
@@ -366,7 +366,10 @@ export default function Beheer() {
                     {new Date(b.created_at).toLocaleString('nl-NL', { dateStyle: 'long', timeStyle: 'short' })}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-                    {Math.round(b.size / 1024)} KB
+                    {b.size >= 1048576
+                      ? `${(b.size / 1048576).toFixed(1)} MB`
+                      : `${Math.round(b.size / 1024)} KB`}
+                    {b.has_uploads && ' · incl. afbeeldingen'}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
