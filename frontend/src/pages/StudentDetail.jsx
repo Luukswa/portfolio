@@ -271,11 +271,6 @@ export default function StudentDetail() {
                     {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
                     {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
                     {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
-                    {fotos.length > 0 && (
-                      <button className="btn btn-ghost btn-sm" style={{ marginTop: '8px', alignSelf: 'flex-start' }} onClick={() => open(0)}>
-                        🔍 {fotos.length > 1 ? `Bekijk album (${fotos.length})` : 'Bekijk foto'}
-                      </button>
-                    )}
                   </div>
                 </div>
               )
