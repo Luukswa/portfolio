@@ -181,7 +181,7 @@ export default function Beheer() {
                   : <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)' }}>Geen logo</span>
                 }
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'flex-start' }}>
                 <label style={{ cursor: uploadingLogo ? 'wait' : 'pointer' }}>
                   <span className={`btn btn-ghost btn-sm`} style={{ pointerEvents: 'none' }}>
                     {uploadingLogo ? 'Uploaden…' : logoUrl ? 'Logo wijzigen' : 'Logo uploaden'}
