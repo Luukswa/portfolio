@@ -75,11 +75,9 @@ GET /api/werkstukken/<werk_id>/fotos/<foto_id>
 - Fetch calls go to `/api/...` — proxied to `localhost:5000` in dev by Vite.
 
 ## Deployment
+After every commit and push, always give the user this exact deploy command to run on the server:
 ```
-pm2 stop portfolio
-git pull
-cd frontend && npm run build && cd ..
-pm2 start portfolio
+pm2 stop portfolio && git pull && cd frontend && npm run build && cd .. && pm2 start portfolio
 ```
 Stop PM2 before building — it holds a file lock on `dist/assets`.
 
