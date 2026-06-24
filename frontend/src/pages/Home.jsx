@@ -8,26 +8,38 @@ function cijferColor(c) {
   return 'badge-red'
 }
 
-function Panel({ title, linkTo, linkLabel, children }) {
+function statColor(avg) {
+  if (!avg) return 'blue'
+  if (avg >= 7)   return 'green'
+  if (avg >= 5.5) return 'amber'
+  return 'red'
+}
+
+function Panel({ title, to, children }) {
   const navigate = useNavigate()
   return (
-    <div className="dash-panel">
+    <div className="dash-panel" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       <div className="dash-panel-header">
-        <div className="dash-panel-title">{title}</div>
-        {linkTo && <button className="btn btn-ghost btn-sm" onClick={() => navigate(linkTo)}>{linkLabel ?? 'Bekijken →'}</button>}
+        <span className="dash-panel-title">{title}</span>
+        {to && (
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate(to)}>
+            Bewerken →
+          </button>
+        )}
       </div>
       {children}
     </div>
   )
 }
 
-function Empty({ label }) {
-  return <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>{label}</div>
+function Dim({ text }) {
+  return <div style={{ color: 'var(--text-dim)', fontSize: '0.83rem' }}>{text}</div>
 }
 
 export default function Home() {
-  const { user } = useAuth()
-  const [data, setData] = useState(null)
+  const { user }  = useAuth()
+  const [data, setData]     = useState(null)
+  const [avatar, setAvatar] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -37,133 +49,135 @@ export default function Home() {
       fetch('/api/werkstukken').then(r => r.json()).catch(() => []),
       fetch('/api/cv').then(r => r.json()).catch(() => null),
       fetch('/api/referenties').then(r => r.json()).catch(() => null),
-    ]).then(([profile, grades, goals, werkstukken, cv, refs]) => {
+    ]).then(([profile, grades, goals, werkstukken, cv, refs]) =>
       setData({ profile, grades, goals, werkstukken, cv, refs })
-    })
-  }, [])
+    )
+    fetch(`/api/profile/avatar/${user.id}`).then(r => {
+      if (r.ok) setAvatar(`/api/profile/avatar/${user.id}`)
+    }).catch(() => {})
+  }, [user.id])
 
   if (!data) return (
-    <>
-      <div className="dash-welcome">
-        <div>
-          <div className="dash-welcome-text">Welkom, {user.display_name}</div>
-          <div className="dash-welcome-sub">Portfolio</div>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <WelcomeBanner user={user} avatar={null} loading />
       <div className="empty-state">Laden…</div>
-    </>
+    </div>
   )
 
   const { profile, grades, goals, werkstukken, cv, refs } = data
 
-  const avg = grades.length
-    ? (grades.reduce((s, g) => s + g.cijfer, 0) / grades.length).toFixed(1)
-    : null
+  const avg     = grades.length ? (grades.reduce((s, g) => s + g.cijfer, 0) / grades.length) : null
+  const avgStr  = avg ? avg.toFixed(1) : '—'
+  const cvDone  = cv ? [cv.naam, cv.adres, cv.postcode, cv.telefoon, cv.email].filter(Boolean).length : 0
+  const ref1ok  = !!(refs?.ref1?.naam || refs?.ref1?.datum)
+  const ref2ok  = !!(refs?.ref2?.naam || refs?.ref2?.datum)
 
-  const cvFields = cv ? [cv.naam, cv.adres, cv.postcode, cv.telefoon, cv.email].filter(Boolean).length : 0
-  const cvTotal  = 5
-  const ref1ok   = refs?.ref1 && (refs.ref1.naam || refs.ref1.datum)
-  const ref2ok   = refs?.ref2 && (refs.ref2.naam || refs.ref2.datum)
-
-  const recentGrades     = [...grades].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 6)
-  const recentWerkstukken = werkstukken.slice(0, 4)
+  const recentGrades = [...grades]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 8)
 
   return (
-    <>
-      {/* Welcome banner */}
-      <div className="dash-welcome">
-        <div>
-          <div className="dash-welcome-text">Welkom, {user.display_name}</div>
-          <div className="dash-welcome-sub">Hier is een overzicht van je portfolio</div>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-      {/* Stat tiles */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-        <div className={`stat ${avg >= 7 ? 'green' : avg >= 5.5 ? 'amber' : avg ? 'red' : 'blue'}`}>
+      {/* ── Welcome ── */}
+      <WelcomeBanner user={user} avatar={avatar} />
+
+      {/* ── Stats row ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        <div className={`stat ${statColor(avg)}`}>
           <div className="stat-icon-wrap">📊</div>
-          <div className="num">{avg ?? '—'}</div>
-          <div className="lbl">Gemiddeld cijfer</div>
+          <div className="stat-body">
+            <div className="num">{avgStr}</div>
+            <div className="lbl">Gemiddeld cijfer</div>
+          </div>
         </div>
         <div className="stat blue">
           <div className="stat-icon-wrap">📝</div>
-          <div className="num">{grades.length}</div>
-          <div className="lbl">Cijfers</div>
+          <div className="stat-body">
+            <div className="num">{grades.length}</div>
+            <div className="lbl">Cijfers</div>
+          </div>
         </div>
         <div className="stat blue">
           <div className="stat-icon-wrap">🎯</div>
-          <div className="num">{goals.length}</div>
-          <div className="lbl">Doelen</div>
+          <div className="stat-body">
+            <div className="num">{goals.length}</div>
+            <div className="lbl">Doelen</div>
+          </div>
         </div>
         <div className="stat blue">
           <div className="stat-icon-wrap">🖼️</div>
-          <div className="num">{werkstukken.length}</div>
-          <div className="lbl">Werkstukken</div>
-        </div>
-        <div className={`stat ${cvFields === cvTotal ? 'green' : cvFields > 0 ? 'amber' : 'blue'}`}>
-          <div className="stat-icon-wrap">📄</div>
-          <div className="num">{cvFields}/{cvTotal}</div>
-          <div className="lbl">CV ingevuld</div>
-        </div>
-        <div className={`stat ${ref1ok && ref2ok ? 'green' : ref1ok || ref2ok ? 'amber' : 'blue'}`}>
-          <div className="stat-icon-wrap">👤</div>
-          <div className="num">{(ref1ok ? 1 : 0) + (ref2ok ? 1 : 0)}/2</div>
-          <div className="lbl">Referenties</div>
+          <div className="stat-body">
+            <div className="num">{werkstukken.length}</div>
+            <div className="lbl">Werkstukken</div>
+          </div>
         </div>
       </div>
 
-      {/* Panels grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
-
-        {/* Over mij */}
-        <Panel title="Over mij" linkTo="/over-mij" linkLabel="Bewerken →">
-          {profile?.bio
-            ? <p style={{ fontSize: '0.85rem', color: 'var(--text-soft)', lineHeight: 1.6, marginBottom: profile.skills?.length ? '10px' : 0 }}>{profile.bio.length > 180 ? profile.bio.slice(0, 180) + '…' : profile.bio}</p>
-            : null
-          }
-          {profile?.skills?.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '8px' }}>
-              {profile.skills.map(s => <span key={s} className="badge badge-primary">{s}</span>)}
-            </div>
-          )}
-          {profile?.hobbies?.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-              {profile.hobbies.map((h, i) => <span key={i} className="badge badge-gray">{h.emoji} {h.label}</span>)}
-            </div>
-          )}
-          {!profile?.bio && !profile?.skills?.length && !profile?.hobbies?.length && <Empty label="Nog niets ingevuld." />}
-        </Panel>
+      {/* ── Main panels ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
 
         {/* Cijfers */}
-        <Panel title="Mijn cijfers" linkTo="/mijn-cijfers" linkLabel="Alle cijfers →">
-          {recentGrades.length === 0 ? <Empty label="Nog geen cijfers." /> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {recentGrades.map(g => (
-                <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--text)', fontWeight: 500 }}>{g.vak}</span>
-                  <span className={`badge ${cijferColor(g.cijfer)}`} style={{ fontSize: '0.78rem' }}>
+        <Panel title="Mijn cijfers" to="/mijn-cijfers">
+          {recentGrades.length === 0 ? <Dim text="Nog geen cijfers toegevoegd." /> : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {recentGrades.map((g, i) => (
+                <div key={g.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: i < recentGrades.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <span style={{ fontSize: '0.88rem', color: 'var(--text)', fontWeight: 500 }}>{g.vak}</span>
+                  <span className={`badge ${cijferColor(g.cijfer)}`} style={{ fontSize: '0.8rem' }}>
                     {g.cijfer % 1 === 0 ? g.cijfer.toFixed(1) : g.cijfer}
                   </span>
                 </div>
               ))}
               {avg && (
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '2px', display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '10px', fontSize: '0.8rem', fontFamily: 'var(--title)', fontWeight: 700, color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   <span>Gemiddelde</span>
-                  <span style={{ color: 'var(--text)' }}>{avg}</span>
+                  <span style={{ color: 'var(--text)' }}>{avgStr}</span>
                 </div>
               )}
             </div>
           )}
         </Panel>
 
+        {/* Over mij */}
+        <Panel title="Over mij" to="/over-mij">
+          {!profile?.bio && !profile?.skills?.length && !profile?.hobbies?.length
+            ? <Dim text="Nog niets ingevuld." />
+            : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {profile?.bio && (
+                  <p style={{ fontSize: '0.87rem', color: 'var(--text-soft)', lineHeight: 1.65 }}>
+                    {profile.bio.length > 200 ? profile.bio.slice(0, 200) + '…' : profile.bio}
+                  </p>
+                )}
+                {profile?.skills?.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', marginBottom: '6px' }}>Skills</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                      {profile.skills.map(s => <span key={s} className="badge badge-primary">{s}</span>)}
+                    </div>
+                  </div>
+                )}
+                {profile?.hobbies?.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', marginBottom: '6px' }}>Hobby's</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                      {profile.hobbies.map((h, i) => <span key={i} className="badge badge-gray">{h.emoji} {h.label}</span>)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+        </Panel>
+
         {/* Doelen */}
-        <Panel title="Doelen" linkTo="/doelen" linkLabel="Bewerken →">
-          {goals.length === 0 ? <Empty label="Nog geen doelen." /> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {goals.map(g => (
-                <div key={g.id} style={{ fontSize: '0.85rem' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--text)' }}>🎯 {g.doel}</div>
-                  {g.wil_leren && <div style={{ color: 'var(--text-soft)', marginTop: '2px', fontSize: '0.8rem' }}>Wil leren: {g.wil_leren}</div>}
+        <Panel title="Doelen" to="/doelen">
+          {goals.length === 0 ? <Dim text="Nog geen doelen toegevoegd." /> : (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {goals.map((g, i) => (
+                <div key={g.id} style={{ padding: '8px 0', borderBottom: i < goals.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)', marginBottom: g.wil_leren ? '3px' : 0 }}>🎯 {g.doel}</div>
+                  {g.wil_leren && <div style={{ fontSize: '0.8rem', color: 'var(--text-soft)' }}>Wil leren: {g.wil_leren}</div>}
                 </div>
               ))}
             </div>
@@ -171,18 +185,18 @@ export default function Home() {
         </Panel>
 
         {/* Werkstukken */}
-        <Panel title="Werkstukken" linkTo="/mijn-werkstukken" linkLabel="Alle werkstukken →">
-          {recentWerkstukken.length === 0 ? <Empty label="Nog geen werkstukken." /> : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-              {recentWerkstukken.map(w => {
+        <Panel title="Werkstukken" to="/mijn-werkstukken">
+          {werkstukken.length === 0 ? <Dim text="Nog geen werkstukken toegevoegd." /> : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              {werkstukken.slice(0, 6).map(w => {
                 const foto = w.fotos?.[0]
                 return (
                   <div key={w.id} style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface2)' }}>
                     {foto
-                      ? <img src={`${foto.url}?t=1`} alt="" style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }} />
-                      : <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>🖼️</div>
+                      ? <img src={`${foto.url}?t=1`} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                      : <div style={{ width: '100%', aspectRatio: '1', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', color: 'var(--text-dim)' }}>🖼️</div>
                     }
-                    <div style={{ padding: '6px 8px', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.vak}</div>
+                    <div style={{ padding: '4px 6px', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-soft)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.vak}</div>
                   </div>
                 )
               })}
@@ -190,52 +204,69 @@ export default function Home() {
           )}
         </Panel>
 
-        {/* Referenties */}
-        <Panel title="Referenties" linkTo="/mijn-referenties" linkLabel="Bewerken →">
-          {!ref1ok && !ref2ok ? <Empty label="Nog geen referenties." /> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[{ label: 'Vakleerkracht', ref: refs.ref1, ok: ref1ok }, { label: 'Stageleerkracht', ref: refs.ref2, ok: ref2ok }]
-                .filter(r => r.ok)
-                .map(({ label, ref }) => (
-                  <div key={label}>
-                    <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)', marginBottom: '3px' }}>{label}</div>
-                    {ref.naam && <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{ref.naam}</div>}
-                    {ref.vak  && <div style={{ fontSize: '0.8rem', color: 'var(--text-soft)' }}>{ref.vak}</div>}
-                    {ref.datum && <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{ref.datum}</div>}
-                  </div>
-                ))
-              }
+        {/* CV */}
+        <Panel title="CV" to="/mijn-cv">
+          {!cv || cvDone === 0 ? <Dim text="CV nog niet ingevuld." /> : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {[
+                { label: 'Naam',    val: cv.naam },
+                { label: 'Adres',   val: cv.adres },
+                { label: 'Tel.',    val: cv.telefoon },
+                { label: 'E-mail',  val: cv.email },
+              ].filter(r => r.val).map(r => (
+                <div key={r.label} style={{ display: 'flex', gap: '8px', fontSize: '0.85rem' }}>
+                  <span style={{ fontFamily: 'var(--title)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-dim)', width: '44px', flexShrink: 0, paddingTop: '2px' }}>{r.label}</span>
+                  <span style={{ color: 'var(--text)' }}>{r.val}</span>
+                </div>
+              ))}
+              {cv.vaardigheden?.length > 0 && (
+                <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  {cv.vaardigheden.map(v => <span key={v} className="badge badge-primary">{v}</span>)}
+                </div>
+              )}
             </div>
           )}
         </Panel>
 
-        {/* CV */}
-        <Panel title="CV" linkTo="/mijn-cv" linkLabel="Bewerken →">
-          {!cv || cvFields === 0 ? <Empty label="CV nog niet ingevuld." /> : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '0.85rem' }}>
-              {cv.naam     && <div><span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Naam</span>{cv.naam}</div>}
-              {cv.adres    && <div><span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Adres</span>{cv.adres}</div>}
-              {cv.telefoon && <div><span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Tel.</span>{cv.telefoon}</div>}
-              {cv.email    && <div><span style={{ color: 'var(--text-dim)', fontSize: '0.75rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>E-mail</span>{cv.email}</div>}
-              {cv.vaardigheden?.length > 0 && (
-                <div style={{ marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  {cv.vaardigheden.map(v => <span key={v} className="badge badge-primary">{v}</span>)}
-                </div>
-              )}
-              {cv.werkervaring?.length > 0 && (
-                <div style={{ marginTop: '6px' }}>
-                  {cv.werkervaring.map((w, i) => (
-                    <div key={i} style={{ fontSize: '0.82rem', color: 'var(--text-soft)' }}>
-                      {w.bedrijf}{w.functie ? ` · ${w.functie}` : ''}{w.periode ? ` (${w.periode})` : ''}
-                    </div>
-                  ))}
-                </div>
-              )}
+        {/* Referenties */}
+        <Panel title="Referenties" to="/mijn-referenties">
+          {!ref1ok && !ref2ok ? <Dim text="Nog geen referenties ingevuld." /> : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {[{ label: 'Vakleerkracht', ref: refs.ref1, ok: ref1ok }, { label: 'Stageleerkracht', ref: refs.ref2, ok: ref2ok }]
+                .filter(r => r.ok)
+                .map(({ label, ref }) => (
+                  <div key={label}>
+                    <div style={{ fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', marginBottom: '4px' }}>{label}</div>
+                    {ref.naam  && <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{ref.naam}</div>}
+                    {ref.vak   && <div style={{ fontSize: '0.82rem', color: 'var(--text-soft)' }}>{ref.vak}</div>}
+                    {ref.datum && <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '2px' }}>{ref.datum}</div>}
+                  </div>
+                ))}
             </div>
           )}
         </Panel>
 
       </div>
-    </>
+    </div>
+  )
+}
+
+function WelcomeBanner({ user, avatar, loading }) {
+  const initials = user.display_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  return (
+    <div style={{ background: 'var(--primary)', borderRadius: '10px', padding: '20px 24px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: 'var(--shadow)' }}>
+      {avatar
+        ? <img src={avatar} alt="" style={{ width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.3)', flexShrink: 0 }} />
+        : <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.2rem', color: '#fff', flexShrink: 0 }}>{initials}</div>
+      }
+      <div>
+        <div style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.15rem', color: '#fff' }}>
+          Welkom, {user.display_name}
+        </div>
+        <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.65)', marginTop: '3px' }}>
+          {loading ? 'Laden…' : 'Hier is een overzicht van je portfolio'}
+        </div>
+      </div>
+    </div>
   )
 }
