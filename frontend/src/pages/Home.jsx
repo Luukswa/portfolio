@@ -42,15 +42,20 @@ export default function Home() {
   const [avatar, setAvatar] = useState(null)
 
   useEffect(() => {
+    const get     = (url, fb)  => fetch(url).then(r => r.ok ? r.json() : fb).catch(() => fb)
+    const getArr  = url        => get(url, []).then(v => Array.isArray(v) ? v : [])
+
     Promise.all([
-      fetch('/api/profile').then(r => r.json()).catch(() => null),
-      fetch('/api/grades').then(r => r.json()).catch(() => []),
-      fetch('/api/goals').then(r => r.json()).catch(() => []),
-      fetch('/api/werkstukken').then(r => r.json()).catch(() => []),
-      fetch('/api/cv').then(r => r.json()).catch(() => null),
-      fetch('/api/referenties').then(r => r.json()).catch(() => null),
+      get('/api/profile',     null),
+      getArr('/api/grades'),
+      getArr('/api/goals'),
+      getArr('/api/werkstukken'),
+      get('/api/cv',          null),
+      get('/api/referenties', null),
     ]).then(([profile, grades, goals, werkstukken, cv, refs]) =>
       setData({ profile, grades, goals, werkstukken, cv, refs })
+    ).catch(() =>
+      setData({ profile: null, grades: [], goals: [], werkstukken: [], cv: null, refs: null })
     )
     fetch(`/api/profile/avatar/${user.id}`).then(r => {
       if (r.ok) setAvatar(`/api/profile/avatar/${user.id}`)

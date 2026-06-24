@@ -14,11 +14,13 @@ export default function OverMij() {
   const [newHobbyLabel, setNewHobbyLabel] = useState('')
   const [newSubject, setNewSubject] = useState('')
 
+  const EMPTY_PROFILE = { name: '', title: '', bio: '', skills: [], hobbies: [], subjects: [], avatar_url: '' }
+
   useEffect(() => {
     fetch('/api/profile')
-      .then(r => r.json())
-      .then(setProfile)
-      .catch(() => {})
+      .then(r => r.ok ? r.json() : EMPTY_PROFILE)
+      .then(p => setProfile(p || EMPTY_PROFILE))
+      .catch(() => setProfile(EMPTY_PROFILE))
   }, [])
 
   function startEdit() {
