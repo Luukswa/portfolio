@@ -2,41 +2,64 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate, useParams } from 'react-router-dom'
 
-function Lightbox({ url, title, onClose }) {
-  const close = useCallback((e) => {
-    if (e.target === e.currentTarget) onClose()
-  }, [onClose])
+function Lightbox({ urls, initialIndex = 0, title, onClose }) {
+  const [idx, setIdx] = useState(initialIndex)
+  const multi = urls.length > 1
+  const prev = useCallback(() => setIdx(i => (i - 1 + urls.length) % urls.length), [urls.length])
+  const next = useCallback(() => setIdx(i => (i + 1) % urls.length), [urls.length])
 
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [onClose])
+    const h = e => {
+      if (e.key === 'Escape')     onClose()
+      if (e.key === 'ArrowLeft')  setIdx(i => (i - 1 + urls.length) % urls.length)
+      if (e.key === 'ArrowRight') setIdx(i => (i + 1) % urls.length)
+    }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [onClose, urls.length])
+
+  const navBtn = (onClick, label) => (
+    <button onClick={onClick} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', color: '#fff', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, backdropFilter: 'blur(4px)' }}>{label}</button>
+  )
 
   return (
     <div
-      onClick={close}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 1000,
-        background: 'rgba(0,0,0,0.82)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px',
-      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', gap: '12px' }}
     >
-      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-          {title && <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.92rem', fontFamily: 'var(--title)' }}>{title}</span>}
-          <button
-            onClick={onClose}
-            style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-          >✕</button>
-        </div>
-        <img
-          src={url}
-          alt={title || ''}
-          style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 60px)', objectFit: 'contain', borderRadius: '8px', display: 'block' }}
-        />
+      {/* Top bar */}
+      <div style={{ width: '100%', maxWidth: '90vw', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {title && <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.92rem', fontFamily: 'var(--title)', flex: 1 }}>{title}</span>}
+        {multi && <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{idx + 1} / {urls.length}</span>}
+        <button onClick={onClose} style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
       </div>
+
+      {/* Image row with arrows */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '90vw', width: '100%', justifyContent: 'center' }}>
+        {multi && navBtn(prev, '‹')}
+        <img
+          key={idx}
+          src={`${urls[idx]}?t=1`}
+          alt=""
+          style={{ maxWidth: multi ? 'calc(90vw - 120px)' : '90vw', maxHeight: 'calc(90vh - 140px)', objectFit: 'contain', borderRadius: '8px', display: 'block' }}
+        />
+        {multi && navBtn(next, '›')}
+      </div>
+
+      {/* Thumbnail strip */}
+      {multi && (
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', maxWidth: '90vw', padding: '4px 0' }}>
+          {urls.map((u, i) => (
+            <img
+              key={i}
+              src={`${u}?t=1`}
+              alt=""
+              onClick={() => setIdx(i)}
+              style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '5px', cursor: 'pointer', flexShrink: 0, border: i === idx ? '2px solid #fff' : '2px solid transparent', opacity: i === idx ? 1 : 0.55, transition: 'opacity 0.15s' }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -73,7 +96,7 @@ export default function StudentDetail() {
   const [refs, setRefs]         = useState(null)
   const [werkstukken, setWerkstukken] = useState(null)
   const [avatarUrl, setAvatarUrl] = useState(null)
-  const [lightbox, setLightbox] = useState(null) // { url, title }
+  const [lightbox, setLightbox] = useState(null) // { urls, initialIndex, title }
 
   useEffect(() => {
     if (user && !user.is_teacher && !user.is_admin) { navigate('/'); return }
@@ -231,12 +254,14 @@ export default function StudentDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
             {werkstukken.map(w => {
               const fotos = w.fotos || []
+              const urls  = fotos.map(f => f.url)
+              const open  = i => setLightbox({ urls, initialIndex: i, title: w.vak || '' })
               return (
                 <div key={w.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' }}>
                   {fotos.length > 0 ? (
                     <div style={{ display: 'flex', gap: '3px', overflowX: 'auto', padding: '6px', background: 'var(--surface2)' }}>
-                      {fotos.map(f => (
-                        <img key={f.id} src={`${f.url}?t=1`} alt="" onClick={() => setLightbox({ url: f.url, title: w.vak || '' })} style={{ width: fotos.length === 1 ? '100%' : '72px', height: fotos.length === 1 ? 'auto' : '72px', aspectRatio: fotos.length === 1 ? '4/3' : undefined, objectFit: 'cover', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, display: 'block' }} />
+                      {fotos.map((f, i) => (
+                        <img key={f.id} src={`${f.url}?t=1`} alt="" onClick={() => open(i)} style={{ width: fotos.length === 1 ? '100%' : '72px', height: fotos.length === 1 ? 'auto' : '72px', aspectRatio: fotos.length === 1 ? '4/3' : undefined, objectFit: 'cover', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, display: 'block' }} />
                       ))}
                     </div>
                   ) : (
@@ -246,11 +271,10 @@ export default function StudentDetail() {
                     {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
                     {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
                     {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
-                    {fotos.length > 1 && (
-                      <div style={{ marginTop: '6px', fontSize: '0.72rem', color: 'var(--text-dim)' }}>{fotos.length} foto's · klik om te vergroten</div>
-                    )}
-                    {fotos.length === 1 && (
-                      <button className="btn btn-ghost btn-sm" style={{ marginTop: '8px', alignSelf: 'flex-start' }} onClick={() => setLightbox({ url: fotos[0].url, title: w.vak || '' })}>🔍 Bekijk foto</button>
+                    {fotos.length > 0 && (
+                      <button className="btn btn-ghost btn-sm" style={{ marginTop: '8px', alignSelf: 'flex-start' }} onClick={() => open(0)}>
+                        🔍 {fotos.length > 1 ? `Bekijk album (${fotos.length})` : 'Bekijk foto'}
+                      </button>
                     )}
                   </div>
                 </div>
@@ -260,7 +284,7 @@ export default function StudentDetail() {
         )}
       </Section>
 
-      {lightbox && <Lightbox url={lightbox.url} title={lightbox.title} onClose={() => setLightbox(null)} />}
+      {lightbox && <Lightbox urls={lightbox.urls} initialIndex={lightbox.initialIndex} title={lightbox.title} onClose={() => setLightbox(null)} />}
 
       {/* CV */}
       <Section title="CV">
