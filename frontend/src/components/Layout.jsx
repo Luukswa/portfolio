@@ -40,7 +40,7 @@ export default function Layout() {
   return (
     <div className="app-shell">
       <header>
-        <div className="header-left">
+        <div className="header-left" onClick={() => navigate('/')}>
           <div className="logo-mark">
             {logoUrl
               ? <div className="logo-icon"><img src={logoUrl} alt="" style={{ height: '28px', maxWidth: '64px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} /></div>
