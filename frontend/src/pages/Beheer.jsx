@@ -19,6 +19,7 @@ const THEME_META = {
 export default function Beheer() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [tab, setTab] = useState('gebruikers')
   const [users, setUsers] = useState(null)
   const { theme: activeTheme, setTheme, logoUrl, refreshBranding } = useBranding()
   const [savingTheme, setSavingTheme] = useState(false)
@@ -85,169 +86,182 @@ export default function Beheer() {
     <>
       <div className="page-header">
         <div>
-          <h2>Gebruikersbeheer</h2>
-          <div className="subtitle">{users.length} gebruiker{users.length !== 1 ? 's' : ''}</div>
+          <h2>Beheer</h2>
+          <div className="subtitle">
+            {tab === 'gebruikers'
+              ? `${users.length} gebruiker${users.length !== 1 ? 's' : ''}`
+              : 'Thema en logo instellen'}
+          </div>
         </div>
       </div>
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Gebruiker</th>
-              <th>E-mail</th>
-              <th>Laatste login</th>
-              <th>Beheerder</th>
-              <th>Docent</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(u => (
-              <tr key={u.id}>
-                <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                      width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-                      background: 'var(--primary-light)', color: 'var(--primary)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'var(--title)', fontWeight: 700, fontSize: '0.85rem',
-                    }}>
-                      {u.display_name?.[0]?.toUpperCase() ?? '?'}
-                    </div>
-                    <span style={{ fontWeight: 500 }}>{u.display_name}</span>
-                  </div>
-                </td>
-                <td style={{ color: 'var(--text-soft)' }}>{u.email}</td>
-                <td style={{ color: 'var(--text-soft)', fontSize: '0.82rem' }}>{fmt(u.last_login)}</td>
-                <td>
-                  <button
-                    onClick={() => toggle(u.id, 'is_admin', u.is_admin)}
-                    className={`badge ${u.is_admin ? 'badge-primary' : 'badge-gray'}`}
-                    style={{ cursor: 'pointer', border: 'none' }}
-                    title={u.is_admin ? 'Klik om te verwijderen' : 'Klik om te maken'}
-                  >
-                    {u.is_admin ? 'Ja' : 'Nee'}
-                  </button>
-                </td>
-                <td>
-                  <button
-                    onClick={() => toggle(u.id, 'is_teacher', u.is_teacher)}
-                    className={`badge ${u.is_teacher ? 'badge-blue' : 'badge-gray'}`}
-                    style={{ cursor: 'pointer', border: 'none' }}
-                    title={u.is_teacher ? 'Klik om te verwijderen' : 'Klik om te maken'}
-                  >
-                    {u.is_teacher ? 'Ja' : 'Nee'}
-                  </button>
-                </td>
+      <div className="tab-bar">
+        <button className={`tab-btn${tab === 'gebruikers' ? ' active' : ''}`} onClick={() => setTab('gebruikers')}>
+          Gebruikers
+        </button>
+        <button className={`tab-btn${tab === 'huisstijl' ? ' active' : ''}`} onClick={() => setTab('huisstijl')}>
+          Huisstijl
+        </button>
+      </div>
+
+      {/* ── Gebruikers ── */}
+      {tab === 'gebruikers' && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Gebruiker</th>
+                <th>E-mail</th>
+                <th>Laatste login</th>
+                <th>Beheerder</th>
+                <th>Docent</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Huisstijl */}
-      <div style={{ marginTop: '32px' }}>
-        <div className="section-title" style={{ marginTop: 0, marginBottom: '4px' }}>Huisstijl</div>
-        <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '20px' }}>
-          Kies het kleurthema en het logo voor alle portfoliopagina's.
+            </thead>
+            <tbody>
+              {users.map(u => (
+                <tr key={u.id}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+                        background: 'var(--primary-light)', color: 'var(--primary)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: 'var(--title)', fontWeight: 700, fontSize: '0.85rem',
+                      }}>
+                        {u.display_name?.[0]?.toUpperCase() ?? '?'}
+                      </div>
+                      <span style={{ fontWeight: 500 }}>{u.display_name}</span>
+                    </div>
+                  </td>
+                  <td style={{ color: 'var(--text-soft)' }}>{u.email}</td>
+                  <td style={{ color: 'var(--text-soft)', fontSize: '0.82rem' }}>{fmt(u.last_login)}</td>
+                  <td>
+                    <button
+                      onClick={() => toggle(u.id, 'is_admin', u.is_admin)}
+                      className={`badge ${u.is_admin ? 'badge-primary' : 'badge-gray'}`}
+                      style={{ cursor: 'pointer', border: 'none' }}
+                      title={u.is_admin ? 'Klik om te verwijderen' : 'Klik om te maken'}
+                    >
+                      {u.is_admin ? 'Ja' : 'Nee'}
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => toggle(u.id, 'is_teacher', u.is_teacher)}
+                      className={`badge ${u.is_teacher ? 'badge-blue' : 'badge-gray'}`}
+                      style={{ cursor: 'pointer', border: 'none' }}
+                      title={u.is_teacher ? 'Klik om te verwijderen' : 'Klik om te maken'}
+                    >
+                      {u.is_teacher ? 'Ja' : 'Nee'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      )}
 
-        {/* Logo */}
-        <div className="card" style={{ marginBottom: '16px' }}>
-          <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '14px', color: 'var(--text)' }}>Logo</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+      {/* ── Huisstijl ── */}
+      {tab === 'huisstijl' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-            {/* Preview box */}
-            <div style={{
-              width: '120px', height: '72px', borderRadius: '8px',
-              background: 'var(--primary)', border: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, overflow: 'hidden',
-            }}>
-              {logoUrl
-                ? <img src={logoUrl} alt="Logo" style={{ maxWidth: '100px', maxHeight: '56px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
-                : <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Geen logo</span>
-              }
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                cursor: uploadingLogo ? 'wait' : 'pointer',
+          {/* Logo */}
+          <div className="card">
+            <div className="section-title" style={{ marginTop: 0, marginBottom: '16px' }}>Logo</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+              <div style={{
+                width: '140px', height: '80px', borderRadius: '10px',
+                background: 'var(--primary)', border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, overflow: 'hidden',
               }}>
-                <span className="btn btn-ghost btn-sm" style={{ pointerEvents: 'none' }}>
-                  {uploadingLogo ? 'Uploaden…' : logoUrl ? 'Logo wijzigen' : 'Logo uploaden'}
-                </span>
-                <input
-                  ref={logoRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/svg+xml"
-                  style={{ display: 'none' }}
-                  onChange={handleLogoUpload}
-                  disabled={uploadingLogo}
-                />
-              </label>
-              {logoUrl && (
-                <button
-                  className="btn btn-ghost btn-sm"
-                  style={{ color: 'var(--red)', textAlign: 'left' }}
-                  onClick={handleLogoDelete}
-                  disabled={uploadingLogo}
-                >
-                  Logo verwijderen
-                </button>
-              )}
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>
-                JPG, PNG, WebP of SVG. Het logo wordt wit weergegeven in de header.
+                {logoUrl
+                  ? <img src={logoUrl} alt="Logo" style={{ maxWidth: '110px', maxHeight: '60px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                  : <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)' }}>Geen logo</span>
+                }
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <label style={{ cursor: uploadingLogo ? 'wait' : 'pointer' }}>
+                  <span className={`btn btn-ghost btn-sm`} style={{ pointerEvents: 'none' }}>
+                    {uploadingLogo ? 'Uploaden…' : logoUrl ? 'Logo wijzigen' : 'Logo uploaden'}
+                  </span>
+                  <input
+                    ref={logoRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                    style={{ display: 'none' }}
+                    onChange={handleLogoUpload}
+                    disabled={uploadingLogo}
+                  />
+                </label>
+                {logoUrl && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ color: 'var(--red)' }}
+                    onClick={handleLogoDelete}
+                    disabled={uploadingLogo}
+                  >
+                    Logo verwijderen
+                  </button>
+                )}
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', lineHeight: 1.6, maxWidth: '280px' }}>
+                  JPG, PNG, WebP of SVG. Het logo wordt wit weergegeven in de header.
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Thema */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          {Object.entries(THEME_META).map(([key, meta]) => {
-            const active = key === activeTheme
-            return (
-              <div
-                key={key}
-                className="card"
-                onClick={() => saveTheme(key)}
-                style={{
-                  cursor: active ? 'default' : savingTheme ? 'wait' : 'pointer',
-                  border: `2px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
-                  boxShadow: active ? 'var(--shadow)' : 'none',
-                  transition: 'border-color 0.18s, box-shadow 0.18s',
-                  opacity: savingTheme && !active ? 0.6 : 1,
-                  userSelect: 'none',
-                }}
-              >
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '14px' }}>
-                  {meta.swatches.map((color, i) => (
-                    <div key={i} style={{
-                      width: '30px', height: '30px', borderRadius: '50%',
-                      background: color, border: '2px solid rgba(0,0,0,0.08)',
-                      flexShrink: 0,
-                    }} />
-                  ))}
-                </div>
-                <div style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text)', marginBottom: '4px' }}>
-                  {meta.label}
-                </div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-soft)', lineHeight: 1.5 }}>
-                  {meta.description}
-                </div>
-                <span
-                  className={`badge ${active ? 'badge-primary' : 'badge-gray'}`}
-                  style={{ marginTop: '14px', display: 'inline-block', opacity: active ? 1 : 0.7 }}
-                >
-                  {active ? 'Actief' : 'Activeren'}
-                </span>
-              </div>
-            )
-          })}
+          {/* Thema */}
+          <div className="card">
+            <div className="section-title" style={{ marginTop: 0, marginBottom: '6px' }}>Kleurthema</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '18px' }}>
+              Geldt direct voor alle gebruikers.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              {Object.entries(THEME_META).map(([key, meta]) => {
+                const active = key === activeTheme
+                return (
+                  <div
+                    key={key}
+                    onClick={() => saveTheme(key)}
+                    style={{
+                      borderRadius: '10px', padding: '16px',
+                      border: `2px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+                      background: active ? 'var(--primary-light)' : 'var(--surface2)',
+                      cursor: active ? 'default' : savingTheme ? 'wait' : 'pointer',
+                      opacity: savingTheme && !active ? 0.6 : 1,
+                      transition: 'border-color 0.18s, background 0.18s, box-shadow 0.18s',
+                      boxShadow: active ? 'var(--shadow-sm)' : 'none',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                      {meta.swatches.map((color, i) => (
+                        <div key={i} style={{
+                          width: '26px', height: '26px', borderRadius: '50%',
+                          background: color, border: '2px solid rgba(0,0,0,0.08)',
+                          flexShrink: 0,
+                        }} />
+                      ))}
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text)', marginBottom: '4px' }}>
+                      {meta.label}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-soft)', lineHeight: 1.5, marginBottom: '12px' }}>
+                      {meta.description}
+                    </div>
+                    <span className={`badge ${active ? 'badge-primary' : 'badge-gray'}`} style={{ opacity: active ? 1 : 0.65 }}>
+                      {active ? 'Actief' : 'Activeren'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
         </div>
-      </div>
+      )}
     </>
   )
 }
