@@ -87,11 +87,20 @@ def student_werkstukken(student_id):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, vak, gemaakt_bij, datum, trots_omdat, foto_url FROM werkstukken WHERE user_id = %s ORDER BY created_at DESC",
+                "SELECT id, vak, gemaakt_bij, datum, trots_omdat FROM werkstukken WHERE user_id=%s ORDER BY created_at DESC",
                 (student_id,),
             )
             rows = cur.fetchall()
-        return jsonify([{'id': r[0], 'vak': r[1], 'gemaakt_bij': r[2], 'datum': r[3], 'trots_omdat': r[4], 'foto_url': r[5]} for r in rows])
+            result = []
+            for r in rows:
+                cur.execute(
+                    "SELECT id FROM werkstuk_fotos WHERE werkstuk_id=%s AND filename != '' ORDER BY created_at",
+                    (r[0],),
+                )
+                fotos = [{'id': f[0], 'url': f'/api/werkstukken/{r[0]}/fotos/{f[0]}'} for f in cur.fetchall()]
+                result.append({'id': r[0], 'vak': r[1], 'gemaakt_bij': r[2],
+                                'datum': r[3], 'trots_omdat': r[4], 'fotos': fotos})
+        return jsonify(result)
     finally:
         put_conn(conn)
 

@@ -31,15 +31,11 @@ def _find_user_dir(user_id):
                 return entry.path
     return None
 
-def _werk_dir_name(vak, werk_id):
-    safe_vak = _safe(vak) if vak else 'werkstuk'
-    return f'{safe_vak}_{werk_id}'
-
 def _make_werk_dir(user_dir, vak, werk_id):
-    return os.path.join(user_dir, 'werkstukken', _werk_dir_name(vak, werk_id))
+    safe_vak = _safe(vak) if vak else 'werkstuk'
+    return os.path.join(user_dir, 'werkstukken', f'{safe_vak}_{werk_id}')
 
 def _find_werk_dir(user_dir, werk_id):
-    """Locate the werkstuk folder by scanning for _{werk_id} suffix."""
     base = os.path.join(user_dir, 'werkstukken')
     suffix = f'_{werk_id}'
     if os.path.exists(base):
@@ -49,7 +45,7 @@ def _find_werk_dir(user_dir, werk_id):
     return None
 
 
-def _ensure_table(cur):
+def _ensure_tables(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS werkstukken (
             id          SERIAL PRIMARY KEY,
@@ -62,11 +58,35 @@ def _ensure_table(cur):
             created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS werkstuk_fotos (
+            id          SERIAL PRIMARY KEY,
+            werkstuk_id INTEGER NOT NULL,
+            filename    TEXT NOT NULL DEFAULT '',
+            created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    """)
 
 
-def _row(r):
-    return {'id': r[0], 'vak': r[1], 'gemaakt_bij': r[2], 'datum': r[3], 'trots_omdat': r[4], 'foto_url': r[5]}
+def _fotos_for(cur, werk_id):
+    cur.execute(
+        "SELECT id FROM werkstuk_fotos WHERE werkstuk_id=%s AND filename != '' ORDER BY created_at",
+        (werk_id,),
+    )
+    return [{'id': r[0], 'url': f'/api/werkstukken/{werk_id}/fotos/{r[0]}'} for r in cur.fetchall()]
 
+
+def _save_foto_file(file, user_id, werk_id, vak, foto_id, display_name):
+    ext = _ext(file.filename)
+    filename = f'foto_{foto_id}.{ext}'
+    user_dir = _find_user_dir(user_id) or _user_dir(display_name, user_id)
+    werk_dir = _find_werk_dir(user_dir, werk_id) or _make_werk_dir(user_dir, vak, werk_id)
+    os.makedirs(werk_dir, exist_ok=True)
+    file.save(os.path.join(werk_dir, filename))
+    return filename
+
+
+# ── List / create own werkstukken ────────────────────────────────────────────
 
 @werkstukken_bp.route('/api/werkstukken')
 @require_auth
@@ -75,13 +95,21 @@ def get_werkstukken():
     conn = get_conn()
     try:
         with conn.cursor() as cur:
-            _ensure_table(cur)
+            _ensure_tables(cur)
             conn.commit()
             cur.execute(
-                "SELECT id, vak, gemaakt_bij, datum, trots_omdat, foto_url FROM werkstukken WHERE user_id = %s ORDER BY created_at DESC",
+                "SELECT id, vak, gemaakt_bij, datum, trots_omdat FROM werkstukken WHERE user_id=%s ORDER BY created_at DESC",
                 (user_id,),
             )
-            return jsonify([_row(r) for r in cur.fetchall()])
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                result.append({
+                    'id': r[0], 'vak': r[1], 'gemaakt_bij': r[2],
+                    'datum': r[3], 'trots_omdat': r[4],
+                    'fotos': _fotos_for(cur, r[0]),
+                })
+            return jsonify(result)
     finally:
         put_conn(conn)
 
@@ -89,7 +117,7 @@ def get_werkstukken():
 @werkstukken_bp.route('/api/werkstukken', methods=['POST'])
 @require_auth
 def add_werkstuk():
-    user_id = session['user']['id']
+    user_id     = session['user']['id']
     vak         = request.form.get('vak', '')
     gemaakt_bij = request.form.get('gemaakt_bij', '')
     datum       = request.form.get('datum', '')
@@ -99,25 +127,24 @@ def add_werkstuk():
     conn = get_conn()
     try:
         with conn.cursor() as cur:
-            _ensure_table(cur)
+            _ensure_tables(cur)
             cur.execute(
                 "INSERT INTO werkstukken (user_id, vak, gemaakt_bij, datum, trots_omdat) VALUES (%s,%s,%s,%s,%s) RETURNING id",
                 (user_id, vak, gemaakt_bij, datum, trots_omdat),
             )
             new_id = cur.fetchone()[0]
 
-            foto_url = ''
+            fotos = []
             if file and file.filename and _ext(file.filename) in ALLOWED_EXT:
-                ext = _ext(file.filename)
-                user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
-                foto_subdir = _make_werk_dir(user_dir, vak, new_id)
-                os.makedirs(foto_subdir, exist_ok=True)
-                file.save(os.path.join(foto_subdir, f'foto.{ext}'))
-                foto_url = f'/api/werkstukken/{new_id}/foto'
-                cur.execute("UPDATE werkstukken SET foto_url=%s WHERE id=%s", (foto_url, new_id))
+                cur.execute("INSERT INTO werkstuk_fotos (werkstuk_id) VALUES (%s) RETURNING id", (new_id,))
+                foto_id = cur.fetchone()[0]
+                filename = _save_foto_file(file, user_id, new_id, vak, foto_id, session['user']['display_name'])
+                cur.execute("UPDATE werkstuk_fotos SET filename=%s WHERE id=%s", (filename, foto_id))
+                fotos = [{'id': foto_id, 'url': f'/api/werkstukken/{new_id}/fotos/{foto_id}'}]
 
             conn.commit()
-        return jsonify({'id': new_id, 'vak': vak, 'gemaakt_bij': gemaakt_bij, 'datum': datum, 'trots_omdat': trots_omdat, 'foto_url': foto_url}), 201
+        return jsonify({'id': new_id, 'vak': vak, 'gemaakt_bij': gemaakt_bij,
+                        'datum': datum, 'trots_omdat': trots_omdat, 'fotos': fotos}), 201
     finally:
         put_conn(conn)
 
@@ -126,8 +153,8 @@ def add_werkstuk():
 @require_auth
 def update_werkstuk(werk_id):
     user_id = session['user']['id']
-    data = request.get_json(force=True)
-    conn = get_conn()
+    data    = request.get_json(force=True)
+    conn    = get_conn()
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -144,25 +171,28 @@ def update_werkstuk(werk_id):
 @require_auth
 def delete_werkstuk(werk_id):
     user_id = session['user']['id']
-    conn = get_conn()
+    conn    = get_conn()
     try:
         with conn.cursor() as cur:
+            cur.execute("DELETE FROM werkstuk_fotos WHERE werkstuk_id=%s", (werk_id,))
             cur.execute("DELETE FROM werkstukken WHERE id=%s AND user_id=%s", (werk_id, user_id))
             conn.commit()
         user_dir = _find_user_dir(user_id)
         if user_dir:
-            foto_subdir = _find_werk_dir(user_dir, werk_id)
-            if foto_subdir:
-                try: shutil.rmtree(foto_subdir)
+            werk_dir = _find_werk_dir(user_dir, werk_id)
+            if werk_dir:
+                try: shutil.rmtree(werk_dir)
                 except: pass
         return jsonify({'ok': True})
     finally:
         put_conn(conn)
 
 
-@werkstukken_bp.route('/api/werkstukken/<int:werk_id>/foto', methods=['POST'])
+# ── Per-werkstuk foto management ─────────────────────────────────────────────
+
+@werkstukken_bp.route('/api/werkstukken/<int:werk_id>/fotos', methods=['POST'])
 @require_auth
-def upload_foto(werk_id):
+def add_foto(werk_id):
     user_id = session['user']['id']
     if 'file' not in request.files:
         return jsonify({'error': 'Geen bestand'}), 400
@@ -170,57 +200,76 @@ def upload_foto(werk_id):
     if not file.filename or _ext(file.filename) not in ALLOWED_EXT:
         return jsonify({'error': 'Ongeldig bestandstype'}), 400
 
-    ext = _ext(file.filename)
-    conn2 = get_conn()
-    try:
-        with conn2.cursor() as cur:
-            cur.execute("SELECT vak FROM werkstukken WHERE id=%s AND user_id=%s", (werk_id, user_id))
-            row2 = cur.fetchone()
-    finally:
-        put_conn(conn2)
-    if not row2:
-        return jsonify({'error': 'Niet gevonden'}), 404
-    vak = row2[0]
-
-    user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
-    old_dir = _find_werk_dir(user_dir, werk_id)
-    if old_dir:
-        try: shutil.rmtree(old_dir)
-        except: pass
-    foto_subdir = _make_werk_dir(user_dir, vak, werk_id)
-    os.makedirs(foto_subdir, exist_ok=True)
-
-    file.save(os.path.join(foto_subdir, f'foto.{ext}'))
-    foto_url = f'/api/werkstukken/{werk_id}/foto'
-
     conn = get_conn()
     try:
         with conn.cursor() as cur:
-            cur.execute("UPDATE werkstukken SET foto_url=%s WHERE id=%s AND user_id=%s", (foto_url, werk_id, user_id))
+            cur.execute("SELECT vak FROM werkstukken WHERE id=%s AND user_id=%s", (werk_id, user_id))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({'error': 'Niet gevonden'}), 404
+            vak = row[0]
+
+            cur.execute("INSERT INTO werkstuk_fotos (werkstuk_id) VALUES (%s) RETURNING id", (werk_id,))
+            foto_id = cur.fetchone()[0]
+            filename = _save_foto_file(file, user_id, werk_id, vak, foto_id, session['user']['display_name'])
+            cur.execute("UPDATE werkstuk_fotos SET filename=%s WHERE id=%s", (filename, foto_id))
             conn.commit()
+
+        return jsonify({'id': foto_id, 'url': f'/api/werkstukken/{werk_id}/fotos/{foto_id}'})
     finally:
         put_conn(conn)
 
-    return jsonify({'foto_url': foto_url})
 
-
-@werkstukken_bp.route('/api/werkstukken/<int:werk_id>/foto')
+@werkstukken_bp.route('/api/werkstukken/<int:werk_id>/fotos/<int:foto_id>', methods=['DELETE'])
 @require_auth
-def get_foto(werk_id):
+def delete_foto(werk_id, foto_id):
+    user_id = session['user']['id']
+    conn    = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT f.filename FROM werkstukken w
+                JOIN werkstuk_fotos f ON f.werkstuk_id = w.id
+                WHERE w.id=%s AND w.user_id=%s AND f.id=%s
+            """, (werk_id, user_id, foto_id))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({'error': 'Niet gevonden'}), 404
+            filename = row[0]
+            cur.execute("DELETE FROM werkstuk_fotos WHERE id=%s", (foto_id,))
+            conn.commit()
+
+        user_dir = _find_user_dir(user_id)
+        if user_dir:
+            werk_dir = _find_werk_dir(user_dir, werk_id)
+            if werk_dir and filename:
+                try: os.remove(os.path.join(werk_dir, filename))
+                except: pass
+        return jsonify({'ok': True})
+    finally:
+        put_conn(conn)
+
+
+@werkstukken_bp.route('/api/werkstukken/<int:werk_id>/fotos/<int:foto_id>')
+@require_auth
+def get_foto_by_id(werk_id, foto_id):
     conn = get_conn()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT user_id FROM werkstukken WHERE id=%s", (werk_id,))
+            cur.execute("""
+                SELECT w.user_id, f.filename FROM werkstukken w
+                JOIN werkstuk_fotos f ON f.werkstuk_id = w.id
+                WHERE w.id=%s AND f.id=%s AND f.filename != ''
+            """, (werk_id, foto_id))
             row = cur.fetchone()
     finally:
         put_conn(conn)
     if not row:
         return '', 404
-    user_dir = _find_user_dir(row[0])
+    user_id, filename = row
+    user_dir = _find_user_dir(user_id)
     if user_dir:
-        foto_subdir = _find_werk_dir(user_dir, werk_id)
-        if foto_subdir:
-            for f in os.listdir(foto_subdir):
-                if f.startswith('foto.'):
-                    return send_from_directory(foto_subdir, f)
+        werk_dir = _find_werk_dir(user_dir, werk_id)
+        if werk_dir and os.path.exists(os.path.join(werk_dir, filename)):
+            return send_from_directory(werk_dir, filename)
     return '', 404

@@ -229,28 +229,33 @@ export default function StudentDetail() {
       <Section title={`Werkstukken${werkstukken.length ? ` (${werkstukken.length})` : ''}`}>
         {werkstukken.length === 0 ? <Empty /> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-            {werkstukken.map(w => (
-              <div key={w.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' }}>
-                {w.foto_url
-                  ? <img src={`${w.foto_url}?t=1`} alt="" style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block', cursor: 'pointer' }} onClick={() => setLightbox({ url: w.foto_url, title: w.vak || '' })} />
-                  : <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.78rem' }}>Geen foto</div>
-                }
-                <div style={{ padding: '10px 12px', fontSize: '0.82rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
-                  {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
-                  {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
-                  {w.foto_url && (
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      style={{ marginTop: '8px', alignSelf: 'flex-start' }}
-                      onClick={() => setLightbox({ url: w.foto_url, title: w.vak || '' })}
-                    >
-                      🔍 Bekijk foto
-                    </button>
+            {werkstukken.map(w => {
+              const fotos = w.fotos || []
+              return (
+                <div key={w.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' }}>
+                  {fotos.length > 0 ? (
+                    <div style={{ display: 'flex', gap: '3px', overflowX: 'auto', padding: '6px', background: 'var(--surface2)' }}>
+                      {fotos.map(f => (
+                        <img key={f.id} src={`${f.url}?t=1`} alt="" onClick={() => setLightbox({ url: f.url, title: w.vak || '' })} style={{ width: fotos.length === 1 ? '100%' : '72px', height: fotos.length === 1 ? 'auto' : '72px', aspectRatio: fotos.length === 1 ? '4/3' : undefined, objectFit: 'cover', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, display: 'block' }} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.78rem' }}>Geen foto</div>
                   )}
+                  <div style={{ padding: '10px 12px', fontSize: '0.82rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
+                    {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
+                    {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
+                    {fotos.length > 1 && (
+                      <div style={{ marginTop: '6px', fontSize: '0.72rem', color: 'var(--text-dim)' }}>{fotos.length} foto's · klik om te vergroten</div>
+                    )}
+                    {fotos.length === 1 && (
+                      <button className="btn btn-ghost btn-sm" style={{ marginTop: '8px', alignSelf: 'flex-start' }} onClick={() => setLightbox({ url: fotos[0].url, title: w.vak || '' })}>🔍 Bekijk foto</button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </Section>

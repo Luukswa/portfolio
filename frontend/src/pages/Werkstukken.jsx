@@ -1,110 +1,127 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 const EMPTY = { vak: '', gemaakt_bij: '', datum: '', trots_omdat: '' }
 
-function PhotoArea({ fotoUrl, cacheKey, editing, onUpload }) {
-  const inputRef = useRef()
-  // Only add cache-bust to API URLs (/api/...), not to data: or blob: previews
-  const src = fotoUrl
-    ? (fotoUrl.startsWith('/') || fotoUrl.startsWith('http') ? `${fotoUrl}?t=${cacheKey}` : fotoUrl)
-    : null
+// ── Inline lightbox ───────────────────────────────────────────────────────────
 
-  if (!editing) {
-    return src ? (
-      <img src={src} alt="" style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', borderRadius: '6px 6px 0 0', display: 'block' }} />
-    ) : (
-      <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--surface2)', borderRadius: '6px 6px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.82rem' }}>
-        Geen foto
-      </div>
-    )
-  }
-
+function Lightbox({ url, onClose }) {
+  const close = useCallback(e => { if (e.target === e.currentTarget) onClose() }, [onClose])
+  useEffect(() => {
+    const h = e => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [onClose])
   return (
-    <div
-      onClick={() => inputRef.current.click()}
-      style={{
-        width: '100%', aspectRatio: '4/3', borderRadius: '6px 6px 0 0',
-        background: src ? 'transparent' : 'var(--surface2)',
-        border: src ? 'none' : '2px dashed var(--border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer', position: 'relative', overflow: 'hidden',
-      }}
-    >
-      {src && <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />}
-      <div
-        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: src ? 0 : 1, transition: 'opacity 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.opacity = 1}
-        onMouseLeave={e => e.currentTarget.style.opacity = src ? 0 : 1}
-      >
-        <span style={{ fontSize: '1.4rem' }}>📷</span>
-        <span style={{ color: '#fff', fontSize: '0.78rem', fontWeight: 600 }}>{src ? 'Foto wijzigen' : 'Foto toevoegen'}</span>
+    <div onClick={close} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: '-14px', right: '-14px', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+        <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', display: 'block' }} />
       </div>
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && onUpload(e.target.files[0])} />
     </div>
   )
 }
 
-function WerkstukCard({ item, onSaved, onDeleted }) {
-  const [editing, setEditing]     = useState(false)
-  const [form, setForm]           = useState({ vak: item.vak, gemaakt_bij: item.gemaakt_bij, datum: item.datum, trots_omdat: item.trots_omdat })
-  const [fotoUrl, setFotoUrl]     = useState(item.foto_url)
-  const [cacheKey, setCacheKey]   = useState(item.foto_url ? 1 : 0)
-  const [pendingFile, setPending] = useState(null)
-  const [previewUrl, setPreview]  = useState(null)
-  const [saving, setSaving]       = useState(false)
+// ── Photo strip (view + edit) ─────────────────────────────────────────────────
 
-  // Keep fotoUrl in sync if parent updates item.foto_url
-  useEffect(() => { setFotoUrl(item.foto_url) }, [item.foto_url])
+function FotoStrip({ fotos, editing, onAdd, onDelete }) {
+  const inputRef  = useRef()
+  const [uploading, setUploading] = useState(false)
+  const [lightbox, setLightbox]   = useState(null)
+
+  async function handleAdd(file) {
+    setUploading(true)
+    try { await onAdd(file) } finally { setUploading(false) }
+  }
+
+  const thumb = { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', display: 'block', flexShrink: 0 }
+  const strip = { display: 'flex', gap: '6px', overflowX: 'auto', padding: '10px 12px', minHeight: '100px', alignItems: 'center', background: 'var(--surface2)', borderRadius: '6px 6px 0 0' }
+
+  if (!editing) {
+    if (fotos.length === 0) return (
+      <div style={{ ...strip, justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.82rem' }}>Geen foto's</div>
+    )
+    return (
+      <>
+        <div style={strip}>
+          {fotos.map(f => (
+            <img key={f.id} src={`${f.url}?t=1`} alt="" style={{ ...thumb, cursor: 'pointer' }} onClick={() => setLightbox(f.url)} />
+          ))}
+        </div>
+        {lightbox && <Lightbox url={lightbox} onClose={() => setLightbox(null)} />}
+      </>
+    )
+  }
+
+  return (
+    <div style={strip}>
+      {fotos.map(f => (
+        <div key={f.id} style={{ position: 'relative', flexShrink: 0 }}>
+          <img src={`${f.url}?t=1`} alt="" style={thumb} />
+          <button
+            onClick={() => onDelete(f.id)}
+            style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#e53e3e', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+          >×</button>
+        </div>
+      ))}
+      <div
+        onClick={() => !uploading && inputRef.current.click()}
+        style={{ width: '80px', height: '80px', borderRadius: '6px', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: uploading ? 'wait' : 'pointer', color: 'var(--text-dim)', flexShrink: 0, gap: '2px' }}
+      >
+        <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{uploading ? '…' : '+'}</span>
+        <span style={{ fontSize: '0.65rem' }}>Foto</span>
+      </div>
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && handleAdd(e.target.files[0])} />
+    </div>
+  )
+}
+
+// ── Werkstuk card ─────────────────────────────────────────────────────────────
+
+function WerkstukCard({ item, onSaved, onDeleted }) {
+  const [editing, setEditing] = useState(false)
+  const [form, setForm]       = useState({ vak: item.vak, gemaakt_bij: item.gemaakt_bij, datum: item.datum, trots_omdat: item.trots_omdat })
+  const [fotos, setFotos]     = useState(item.fotos || [])
+  const [saving, setSaving]   = useState(false)
+
+  useEffect(() => { setFotos(item.fotos || []) }, [item.fotos])
 
   function set(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
 
-  function pickPhoto(file) {
-    setPending(file)
-    const reader = new FileReader()
-    reader.onload = (e) => setPreview(e.target.result)
-    reader.readAsDataURL(file)
+  async function addFoto(file) {
+    const fd = new FormData(); fd.append('file', file)
+    const res = await fetch(`/api/werkstukken/${item.id}/fotos`, { method: 'POST', body: fd })
+    if (res.ok) { const f = await res.json(); setFotos(fs => [...fs, f]) }
+  }
+
+  async function deleteFoto(fotoId) {
+    await fetch(`/api/werkstukken/${item.id}/fotos/${fotoId}`, { method: 'DELETE' })
+    setFotos(fs => fs.filter(x => x.id !== fotoId))
   }
 
   async function save() {
     setSaving(true)
     try {
       await fetch(`/api/werkstukken/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-      let newFotoUrl = fotoUrl
-      if (pendingFile) {
-        const fd = new FormData(); fd.append('file', pendingFile)
-        const res = await fetch(`/api/werkstukken/${item.id}/foto`, { method: 'POST', body: fd })
-        const data = await res.json()
-        newFotoUrl = data.foto_url
-        setCacheKey(Date.now())
-      }
-      setFotoUrl(newFotoUrl)
-      setPending(null); setPreview(null)
       setEditing(false)
-      onSaved({ ...item, ...form, foto_url: newFotoUrl })
+      onSaved({ ...item, ...form, fotos })
     } finally { setSaving(false) }
   }
 
   function cancel() {
     setForm({ vak: item.vak, gemaakt_bij: item.gemaakt_bij, datum: item.datum, trots_omdat: item.trots_omdat })
-    setPending(null); setPreview(null); setEditing(false)
+    setEditing(false)
   }
 
-  // Use object URL as preview while editing, stable API url when viewing
-  const displayFoto = previewUrl || (fotoUrl || null)
-  const displayKey  = previewUrl ? 'preview' : cacheKey
-
-  const label = (txt) => (
-    <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)' }}>{txt}</span>
-  )
+  const label = txt => <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)' }}>{txt}</span>
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
-      <PhotoArea fotoUrl={displayFoto} cacheKey={displayKey} editing={editing} onUpload={pickPhoto} />
+      <FotoStrip fotos={fotos} editing={editing} onAdd={addFoto} onDelete={deleteFoto} />
 
       <div style={{ padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {editing ? (
           <>
-            <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: 'var(--danger, #e53e3e)' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required /></div>
+            <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: '#e53e3e' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Dit heb ik gemaakt bij</label><input className="edit-input" value={form.gemaakt_bij} onChange={set('gemaakt_bij')} placeholder="Bijv. een opdracht, stage…" /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" value={form.datum} onChange={set('datum')} placeholder="dd-mm-jjjj" /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Ik ben hier trots op omdat</label><textarea className="edit-input" value={form.trots_omdat} onChange={set('trots_omdat')} rows={3} placeholder="Vertel waarom je hier trots op bent…" /></div>
@@ -131,17 +148,19 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
   )
 }
 
+// ── Add form ──────────────────────────────────────────────────────────────────
+
 function AddForm({ onAdded, onCancel }) {
-  const [form, setForm]       = useState(EMPTY)
+  const [form, setForm]      = useState(EMPTY)
   const [previewUrl, setPreview] = useState(null)
-  const [saving, setSaving]   = useState(false)
-  const fileRef               = useRef(null) // ref avoids stale-closure on fast clicks
+  const [saving, setSaving]  = useState(false)
+  const fileRef              = useRef(null)
 
   function set(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
   function pickPhoto(file) {
     fileRef.current = file
     const reader = new FileReader()
-    reader.onload = (e) => setPreview(e.target.result)
+    reader.onload = e => setPreview(e.target.result)
     reader.readAsDataURL(file)
   }
 
@@ -161,11 +180,30 @@ function AddForm({ onAdded, onCancel }) {
     } finally { setSaving(false) }
   }
 
+  const inputRef = useRef()
+  const src = previewUrl || null
+
   return (
     <div style={{ background: 'var(--surface)', border: '1.5px solid var(--primary)', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-      <PhotoArea fotoUrl={previewUrl} cacheKey="preview" editing onUpload={pickPhoto} />
+      {/* Photo pick area */}
+      <div
+        onClick={() => inputRef.current.click()}
+        style={{ width: '100%', aspectRatio: '4/3', background: src ? 'transparent' : 'var(--surface2)', border: src ? 'none' : 'none', cursor: 'pointer', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        {src && <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: src ? 0 : 1, transition: 'opacity 0.15s' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = 1}
+          onMouseLeave={e => e.currentTarget.style.opacity = src ? 0 : 1}
+        >
+          <span style={{ fontSize: '1.6rem' }}>📷</span>
+          <span style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 600 }}>{src ? 'Foto wijzigen' : 'Foto toevoegen'}</span>
+          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem' }}>Optioneel</span>
+        </div>
+        <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && pickPhoto(e.target.files[0])} />
+      </div>
+
       <form onSubmit={submit} style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: 'var(--danger, #e53e3e)' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required autoFocus /></div>
+        <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: '#e53e3e' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required autoFocus /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Dit heb ik gemaakt bij</label><input className="edit-input" value={form.gemaakt_bij} onChange={set('gemaakt_bij')} placeholder="Bijv. een opdracht, stage…" /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" value={form.datum} onChange={set('datum')} placeholder="dd-mm-jjjj" /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Ik ben hier trots op omdat</label><textarea className="edit-input" value={form.trots_omdat} onChange={set('trots_omdat')} rows={3} placeholder="Vertel waarom je hier trots op bent…" /></div>
@@ -177,6 +215,8 @@ function AddForm({ onAdded, onCancel }) {
     </div>
   )
 }
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Werkstukken() {
   const [items, setItems]   = useState(null)
