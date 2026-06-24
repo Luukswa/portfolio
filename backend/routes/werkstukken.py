@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 from flask import Blueprint, request, jsonify, session, send_from_directory
 from middleware import require_auth
 from db import get_conn, put_conn
@@ -30,8 +31,8 @@ def _find_user_dir(user_id):
                 return entry.path
     return None
 
-def _foto_dir(user_dir):
-    return os.path.join(user_dir, 'werkstukken')
+def _foto_dir(user_dir, werk_id):
+    return os.path.join(user_dir, 'werkstukken', str(werk_id))
 
 
 def _ensure_table(cur):
@@ -95,13 +96,9 @@ def add_werkstuk():
             if file and file.filename and _ext(file.filename) in ALLOWED_EXT:
                 ext = _ext(file.filename)
                 user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
-                foto_subdir = _foto_dir(user_dir)
+                foto_subdir = _foto_dir(user_dir, new_id)
                 os.makedirs(foto_subdir, exist_ok=True)
-                for f in os.listdir(foto_subdir):
-                    if f.startswith(f'werkstuk_{new_id}.'):
-                        try: os.remove(os.path.join(foto_subdir, f))
-                        except: pass
-                file.save(os.path.join(foto_subdir, f'werkstuk_{new_id}.{ext}'))
+                file.save(os.path.join(foto_subdir, f'foto.{ext}'))
                 foto_url = f'/api/werkstukken/{new_id}/foto'
                 cur.execute("UPDATE werkstukken SET foto_url=%s WHERE id=%s", (foto_url, new_id))
 
@@ -140,12 +137,10 @@ def delete_werkstuk(werk_id):
             conn.commit()
         user_dir = _find_user_dir(user_id)
         if user_dir:
-            foto_subdir = _foto_dir(user_dir)
+            foto_subdir = _foto_dir(user_dir, werk_id)
             if os.path.exists(foto_subdir):
-                for f in os.listdir(foto_subdir):
-                    if f.startswith(f'werkstuk_{werk_id}.'):
-                        try: os.remove(os.path.join(foto_subdir, f))
-                        except: pass
+                try: shutil.rmtree(foto_subdir)
+                except: pass
         return jsonify({'ok': True})
     finally:
         put_conn(conn)
@@ -163,15 +158,13 @@ def upload_foto(werk_id):
 
     ext = _ext(file.filename)
     user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
-    foto_subdir = _foto_dir(user_dir)
+    foto_subdir = _foto_dir(user_dir, werk_id)
+    if os.path.exists(foto_subdir):
+        try: shutil.rmtree(foto_subdir)
+        except: pass
     os.makedirs(foto_subdir, exist_ok=True)
 
-    for f in os.listdir(foto_subdir):
-        if f.startswith(f'werkstuk_{werk_id}.'):
-            try: os.remove(os.path.join(foto_subdir, f))
-            except: pass
-
-    file.save(os.path.join(foto_subdir, f'werkstuk_{werk_id}.{ext}'))
+    file.save(os.path.join(foto_subdir, f'foto.{ext}'))
     foto_url = f'/api/werkstukken/{werk_id}/foto'
 
     conn = get_conn()
@@ -199,9 +192,9 @@ def get_foto(werk_id):
         return '', 404
     user_dir = _find_user_dir(row[0])
     if user_dir:
-        foto_subdir = _foto_dir(user_dir)
+        foto_subdir = _foto_dir(user_dir, werk_id)
         if os.path.exists(foto_subdir):
             for f in os.listdir(foto_subdir):
-                if f.startswith(f'werkstuk_{werk_id}.'):
+                if f.startswith('foto.'):
                     return send_from_directory(foto_subdir, f)
     return '', 404
