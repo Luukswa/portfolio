@@ -143,68 +143,79 @@ export default function Beheer() {
   const docenten   = users.filter(u => u.is_teacher && !u.is_admin)
   const leerlingen = users.filter(u => !u.is_teacher && !u.is_admin)
 
-  function renderGroup(title, group) {
-    if (!group.length) return null
+  function renderUsersTable() {
+    const groups = [
+      { title: 'Beheerders', group: beheerders },
+      { title: 'Docenten', group: docenten },
+      { title: 'Leerlingen', group: leerlingen },
+    ].filter(g => g.group.length > 0)
+    if (!groups.length) return null
     return (
-      <div key={title} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</span>
-          <span className="badge badge-gray" style={{ fontSize: '0.72rem' }}>{group.length}</span>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Gebruiker</th>
-                <th>E-mail</th>
-                <th>Laatste login</th>
-                <th>Beheerder</th>
-                <th>Docent</th>
-              </tr>
-            </thead>
-            <tbody>
-              {group.map(u => (
-                <tr key={u.id}>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{
-                        width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
-                        background: 'var(--primary-light)', color: 'var(--primary)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: 'var(--title)', fontWeight: 700, fontSize: '0.85rem',
-                      }}>
-                        {u.display_name?.[0]?.toUpperCase() ?? '?'}
-                      </div>
-                      <span style={{ fontWeight: 500 }}>{u.display_name}</span>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Gebruiker</th>
+              <th>E-mail</th>
+              <th>Laatste login</th>
+              <th>Beheerder</th>
+              <th>Docent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map(({ title, group }, gi) => (
+              <>
+                <tr key={`lbl-${title}`}>
+                  <td colSpan={5} style={{ padding: gi === 0 ? '14px 16px 6px' : '20px 16px 6px', background: 'var(--surface)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</span>
+                      <span className="badge badge-gray" style={{ fontSize: '0.7rem' }}>{group.length}</span>
                     </div>
                   </td>
-                  <td style={{ color: 'var(--text-soft)' }}>{u.email}</td>
-                  <td style={{ color: 'var(--text-soft)', fontSize: '0.82rem' }}>{fmt(u.last_login)}</td>
-                  <td>
-                    <button
-                      onClick={() => toggle(u.id, 'is_admin', u.is_admin)}
-                      className={`badge ${u.is_admin ? 'badge-primary' : 'badge-gray'}`}
-                      style={{ cursor: 'pointer', border: 'none' }}
-                      title={u.is_admin ? 'Klik om te verwijderen' : 'Klik om te maken'}
-                    >
-                      {u.is_admin ? 'Ja' : 'Nee'}
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => toggle(u.id, 'is_teacher', u.is_teacher)}
-                      className={`badge ${u.is_teacher ? 'badge-blue' : 'badge-gray'}`}
-                      style={{ cursor: 'pointer', border: 'none' }}
-                      title={u.is_teacher ? 'Klik om te verwijderen' : 'Klik om te maken'}
-                    >
-                      {u.is_teacher ? 'Ja' : 'Nee'}
-                    </button>
-                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                {group.map(u => (
+                  <tr key={u.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+                          background: 'var(--primary-light)', color: 'var(--primary)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontFamily: 'var(--title)', fontWeight: 700, fontSize: '0.85rem',
+                        }}>
+                          {u.display_name?.[0]?.toUpperCase() ?? '?'}
+                        </div>
+                        <span style={{ fontWeight: 500 }}>{u.display_name}</span>
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-soft)' }}>{u.email}</td>
+                    <td style={{ color: 'var(--text-soft)', fontSize: '0.82rem' }}>{fmt(u.last_login)}</td>
+                    <td>
+                      <button
+                        onClick={() => toggle(u.id, 'is_admin', u.is_admin)}
+                        className={`badge ${u.is_admin ? 'badge-primary' : 'badge-gray'}`}
+                        style={{ cursor: 'pointer', border: 'none' }}
+                        title={u.is_admin ? 'Klik om te verwijderen' : 'Klik om te maken'}
+                      >
+                        {u.is_admin ? 'Ja' : 'Nee'}
+                      </button>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => toggle(u.id, 'is_teacher', u.is_teacher)}
+                        className={`badge ${u.is_teacher ? 'badge-blue' : 'badge-gray'}`}
+                        style={{ cursor: 'pointer', border: 'none' }}
+                        title={u.is_teacher ? 'Klik om te verwijderen' : 'Klik om te maken'}
+                      >
+                        {u.is_teacher ? 'Ja' : 'Nee'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </>
+            ))}
+          </tbody>
+        </table>
       </div>
     )
   }
@@ -237,13 +248,7 @@ export default function Beheer() {
       </div>
 
       {/* ── Gebruikers ── */}
-      {tab === 'gebruikers' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-          {renderGroup('Beheerders', beheerders)}
-          {renderGroup('Docenten', docenten)}
-          {renderGroup('Leerlingen', leerlingen)}
-        </div>
-      )}
+      {tab === 'gebruikers' && renderUsersTable()}
 
       {/* ── Huisstijl ── */}
       {tab === 'huisstijl' && (
