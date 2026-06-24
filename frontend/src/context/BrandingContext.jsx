@@ -29,7 +29,19 @@ function applyTheme(name) {
   const vars = THEMES[name] || THEMES.standaard
   const root = document.documentElement
   Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v))
+  try { localStorage.setItem('theme', name) } catch (_) {}
 }
+
+// Apply cached theme before first render to prevent flash
+;(function () {
+  try {
+    const cached = localStorage.getItem('theme')
+    if (cached && THEMES[cached]) {
+      const root = document.documentElement
+      Object.entries(THEMES[cached]).forEach(([k, v]) => root.style.setProperty(k, v))
+    }
+  } catch (_) {}
+})()
 
 const DEFAULT = { appName: 'Portfolio', primaryColor: '#0d4c92', logoUrl: '', theme: 'standaard' }
 
