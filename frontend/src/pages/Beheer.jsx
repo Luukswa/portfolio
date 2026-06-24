@@ -139,35 +139,18 @@ export default function Beheer() {
 
   if (!users) return <div className="empty-state">Laden…</div>
 
-  return (
-    <>
-      <div className="page-header">
-        <div>
-          <h2>Beheer</h2>
-          <div className="subtitle">
-            {tab === 'gebruikers'
-              ? `${users.length} gebruiker${users.length !== 1 ? 's' : ''}`
-              : tab === 'huisstijl'
-              ? 'Thema en logo instellen'
-              : 'Back-ups beheren'}
-          </div>
+  const beheerders = users.filter(u => u.is_admin)
+  const docenten   = users.filter(u => u.is_teacher && !u.is_admin)
+  const leerlingen = users.filter(u => !u.is_teacher && !u.is_admin)
+
+  function renderGroup(title, group) {
+    if (!group.length) return null
+    return (
+      <div key={title} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</span>
+          <span className="badge badge-gray" style={{ fontSize: '0.72rem' }}>{group.length}</span>
         </div>
-      </div>
-
-      <div className="tab-bar">
-        <button className={`tab-btn${tab === 'gebruikers' ? ' active' : ''}`} onClick={() => setTab('gebruikers')}>
-          Gebruikers
-        </button>
-        <button className={`tab-btn${tab === 'huisstijl' ? ' active' : ''}`} onClick={() => setTab('huisstijl')}>
-          Huisstijl
-        </button>
-        <button className={`tab-btn${tab === 'backup' ? ' active' : ''}`} onClick={() => setTab('backup')}>
-          Back-up
-        </button>
-      </div>
-
-      {/* ── Gebruikers ── */}
-      {tab === 'gebruikers' && (
         <div className="table-wrap">
           <table>
             <thead>
@@ -180,7 +163,7 @@ export default function Beheer() {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
+              {group.map(u => (
                 <tr key={u.id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -221,6 +204,44 @@ export default function Beheer() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <h2>Beheer</h2>
+          <div className="subtitle">
+            {tab === 'gebruikers'
+              ? `${leerlingen.length} leerlingen · ${docenten.length} docenten · ${beheerders.length} beheerders`
+              : tab === 'huisstijl'
+              ? 'Thema en logo instellen'
+              : 'Back-ups beheren'}
+          </div>
+        </div>
+      </div>
+
+      <div className="tab-bar">
+        <button className={`tab-btn${tab === 'gebruikers' ? ' active' : ''}`} onClick={() => setTab('gebruikers')}>
+          Gebruikers
+        </button>
+        <button className={`tab-btn${tab === 'huisstijl' ? ' active' : ''}`} onClick={() => setTab('huisstijl')}>
+          Huisstijl
+        </button>
+        <button className={`tab-btn${tab === 'backup' ? ' active' : ''}`} onClick={() => setTab('backup')}>
+          Back-up
+        </button>
+      </div>
+
+      {/* ── Gebruikers ── */}
+      {tab === 'gebruikers' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          {renderGroup('Beheerders', beheerders)}
+          {renderGroup('Docenten', docenten)}
+          {renderGroup('Leerlingen', leerlingen)}
         </div>
       )}
 
