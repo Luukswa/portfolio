@@ -4,8 +4,9 @@ const EMPTY = { vak: '', gemaakt_bij: '', datum: '', trots_omdat: '' }
 
 function PhotoArea({ fotoUrl, cacheKey, editing, onUpload }) {
   const inputRef = useRef()
+  // Only add cache-bust to API URLs (/api/...), not to data: or blob: previews
   const src = fotoUrl
-    ? (fotoUrl.startsWith('blob:') ? fotoUrl : `${fotoUrl}?t=${cacheKey}`)
+    ? (fotoUrl.startsWith('/') || fotoUrl.startsWith('http') ? `${fotoUrl}?t=${cacheKey}` : fotoUrl)
     : null
 
   if (!editing) {
@@ -59,7 +60,9 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
 
   function pickPhoto(file) {
     setPending(file)
-    setPreview(URL.createObjectURL(file))
+    const reader = new FileReader()
+    reader.onload = (e) => setPreview(e.target.result)
+    reader.readAsDataURL(file)
   }
 
   async function save() {
@@ -135,7 +138,12 @@ function AddForm({ onAdded, onCancel }) {
   const [saving, setSaving]       = useState(false)
 
   function set(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
-  function pickPhoto(file) { setPending(file); setPreview(URL.createObjectURL(file)) }
+  function pickPhoto(file) {
+    setPending(file)
+    const reader = new FileReader()
+    reader.onload = (e) => setPreview(e.target.result)
+    reader.readAsDataURL(file)
+  }
 
   async function submit(e) {
     e.preventDefault()
