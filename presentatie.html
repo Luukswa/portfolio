@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfolio — OSG Twente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600;700;900&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy-deep:   #061e3d;
+      --navy:        #0d4c92;
+      --navy-dark:   #0a3d78;
+      --cyan:        #09afd9;
+      --cyan-dim:    rgba(9,175,217,0.12);
+      --white:       #ffffff;
+      --off-white:   #f0f5fb;
+      --text:        #0d1f3c;
+      --text-soft:   #4a6580;
+      --text-dim:    #8aa5bf;
+      --border:      rgba(13,76,146,0.11);
+      --shadow:      0 4px 28px rgba(13,76,146,0.13);
+      --shadow-sm:   0 2px 8px rgba(13,76,146,0.07);
+      --radius:      12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Barlow', 'Segoe UI', system-ui, sans-serif;
+      background: var(--white);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 16px;
+    }
+
+    /* ── TYPOGRAPHY ─────────────────────────── */
+    .eyebrow {
+      font-family: 'Barlow Condensed', 'Titillium Web', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Titillium Web', 'Segoe UI', sans-serif;
+      line-height: 1.15;
+    }
+
+    /* ── LAYOUT ─────────────────────────────── */
+    .container {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 0 36px;
+    }
+
+    section { padding: 88px 0; }
+
+    /* ── HERO ───────────────────────────────── */
+    .hero {
+      background: var(--navy-deep);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Large decorative letter — the typographic risk: out of grid, clipped */
+    .hero::before {
+      content: 'P';
+      position: absolute;
+      right: -2%;
+      top: -10%;
+      font-family: 'Titillium Web', sans-serif;
+      font-weight: 900;
+      font-size: clamp(240px, 35vw, 440px);
+      color: rgba(255,255,255,0.025);
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      padding: 100px 36px 96px;
+      max-width: 1060px;
+      margin: 0 auto;
+    }
+
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(9,175,217,0.12);
+      border: 1px solid rgba(9,175,217,0.25);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.75rem;
+      color: var(--cyan);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .hero-title {
+      font-weight: 900;
+      font-size: clamp(52px, 7.5vw, 96px);
+      color: var(--white);
+      letter-spacing: -0.025em;
+      margin-bottom: 22px;
+      max-width: 720px;
+    }
+
+    .hero-title em {
+      font-style: normal;
+      color: var(--cyan);
+    }
+
+    .hero-desc {
+      font-size: 1.05rem;
+      color: rgba(255,255,255,0.62);
+      max-width: 520px;
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+
+    .hero-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .hero-rule {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--cyan) 0%, rgba(9,175,217,0) 60%);
+    }
+
+    /* ── SECTION HEADERS ────────────────────── */
+    .s-header { margin-bottom: 44px; }
+    .s-title {
+      font-weight: 700;
+      font-size: clamp(28px, 3.5vw, 42px);
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .s-sub {
+      color: var(--text-soft);
+      font-size: 1rem;
+      max-width: 540px;
+    }
+
+    /* ── ROLLEN ─────────────────────────────── */
+    .rollen { background: var(--off-white); }
+
+    .rollen-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .rol-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .rol-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      background: var(--cyan-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 18px;
+    }
+
+    .rol-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .rol-card p {
+      font-size: 0.875rem;
+      color: var(--text-soft);
+      line-height: 1.65;
+    }
+
+    /* ── BROWSER FRAME (shared mockup wrapper) ── */
+    .browser-frame {
+      width: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 28px 80px rgba(0,0,0,0.38);
+    }
+
+    .browser-bar {
+      background: #1c1c2b;
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .b-dots { display: flex; gap: 5px; }
+    .b-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .bd-r { background: #ff5f57; }
+    .bd-y { background: #febc2e; }
+    .bd-g { background: #28c840; }
+
+    .b-url {
+      flex: 1;
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.38);
+      font-family: 'Barlow', monospace;
+    }
+
+    /* ── APP SHELL (shared by all mockups) ───── */
+    .app-shell { display: flex; flex-direction: column; }
+
+    .app-header {
+      background: var(--navy);
+      height: 42px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .app-logo {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-family: 'Titillium Web', sans-serif;
+      font-weight: 700;
+      font-size: 0.74rem;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .app-hname {
+      margin-left: auto;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.65);
+    }
+
+    .app-hbtn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: rgba(255,255,255,0.65);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 0.6rem;
+      cursor: default;
+    }
+
+    .app-body { display: flex; flex: 1; overflow: hidden; }
+
+    .app-nav {
+      width: 46px;
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .ni {
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      margin: 0 4px;
+      color: var(--text-soft);
+    }
+    .ni.a { background: rgba(13,76,146,0.09); }
+
+    .app-main {
+      flex: 1;
+      background: #f0f5fb;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      overflow: hidden;
+    }
+
+    /* Welcome banner */
+    .aw {
+      background: var(--navy);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .aw-av {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,0.14);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Titillium Web', sans-serif; font-weight: 700;
+      font-size: 0.88rem; color: white; flex-shrink: 0;
+    }
+    .aw-name { font-family: 'Titillium Web', sans-serif; font-weight: 700; font-size: 0.8rem; color: white; }
+    .aw-sub  { font-size: 0.64rem; color: rgba(255,255,255,0.55); margin-top: 1px; }
+
+    /* Stats row */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      flex-shrink: 0;
+    }
+    .stat {
+      background: var(--white);
+      border-radius: 7px;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+    }
+    .stat .num {
+      font-family: 'Titillium Web', sans-serif;
+      font-weight: 700; font-size: 1.15rem; color: var(--navy);
+    }
+    .stat .lbl { font-size: 0.58rem; color: var(--text-soft); margin-top: 1px; }
+
+    /* Panels */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      flex: 1;
+      min-height: 0;
+    }
+    .panel {
+      background: var(--white);
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      padding: 9px 10px;
+      overflow: hidden;
+    }
+    .pttl {
+      font-family: 'Titillium Web', sans-serif;
+      font-weight: 700; font-size: 0.62rem;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--text-soft); margin-bottom: 7px;
+    }
+    .grade-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 2px 0; font-size: 0.64rem; color: var(--text);
+      border-bottom: 1px solid rgba(13,76,146,0.06);
+    }
+    .grade-row:last-child { border-bottom: none; }
+    .gbadge {
+      background: #dcfce7; color: #16a34a;
+      border-radius: 3px; padding: 1px 5px;
+      font-size: 0.58rem; font-weight: 700;
+    }
+    .gbadge-amber { background: #fef9c3; color: #a16207; }
+    .skill-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+    .sc {
+      background: rgba(13,76,146,0.09); color: var(--navy);
+      border-radius: 8px; padding: 2px 7px;
+      font-size: 0.58rem; font-weight: 600;
+    }
+    .goal-row {
+      display: flex; align-items: center; gap: 5px;
+      padding: 2px 0; font-size: 0.64rem; color: var(--text);
+      border-bottom: 1px solid rgba(13,76,146,0.06);
+    }
+    .goal-row:last-child { border-bottom: none; }
+    .foto-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+    }
+    .foto {
+      aspect-ratio: 1; border-radius: 3px;
+    }
+
+    /* ── MOCKUP SECTION (navy bg) ─────────────── */
+    .mockup-section { background: var(--navy); }
+    .mockup-section .s-title { color: var(--white); }
+    .mockup-section .s-sub   { color: rgba(255,255,255,0.6); }
+    .mockup-section .eyebrow { color: var(--cyan); }
+
+    .mockup-center {
+      display: flex;
+      justify-content: center;
+      margin-top: 48px;
+    }
+
+    .mockup-center .browser-frame { max-width: 840px; }
+
+    /* ── FEATURE CARDS ───────────────────────── */
+    .features { background: var(--white); }
+    .features-alt { background: var(--off-white); }
+
+    .feat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .feat-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .feat-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      border: 1px solid var(--border);
+    }
+    .features-alt .feat-card { background: var(--white); }
+
+    .feat-icon { font-size: 1.5rem; margin-bottom: 12px; }
+    .feat-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .feat-card p  { font-size: 0.84rem; color: var(--text-soft); line-height: 1.6; }
+
+    /* ── TEACHER MOCKUP SECTION ──────────────── */
+    .teacher-section { background: var(--off-white); }
+
+    .t-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+
+    .sc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+    .sc-card {
+      background: var(--white);
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      padding: 10px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 5px;
+    }
+    .sc-av {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(13,76,146,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Titillium Web', sans-serif;
+      font-weight: 700; font-size: 0.76rem; color: var(--navy);
+    }
+    .sc-name { font-size: 0.62rem; font-weight: 600; text-align: center; color: var(--text); }
+    .sc-email { font-size: 0.55rem; color: var(--text-dim); text-align: center; }
+
+    .app-search {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 0.68rem;
+      color: var(--text-soft);
+      flex-shrink: 0;
+    }
+
+    /* ── TECH SECTION ────────────────────────── */
+    .tech { background: var(--white); }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px;
+      align-items: start;
+      margin-top: 48px;
+    }
+
+    .tech-list { list-style: none; display: flex; flex-direction: column; gap: 18px; }
+    .tech-list li {
+      display: flex; align-items: flex-start; gap: 14px;
+      font-size: 0.9rem; color: var(--text-soft); line-height: 1.55;
+    }
+    .tech-list li .dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--cyan-dim); border: 2px solid var(--cyan);
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .tech-list strong { color: var(--text); }
+
+    .tech-card {
+      background: var(--off-white);
+      border-radius: var(--radius);
+      padding: 28px;
+      border: 1px solid var(--border);
+    }
+    .tech-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+    .tech-card p  { font-size: 0.875rem; color: var(--text-soft); line-height: 1.7; }
+
+    /* ── FOOTER ─────────────────────────────── */
+    footer {
+      background: var(--navy-deep);
+      color: rgba(255,255,255,0.45);
+      text-align: center;
+      padding: 48px 32px;
+      font-size: 0.85rem;
+    }
+    footer strong { color: var(--white); font-family: 'Titillium Web', sans-serif; font-weight: 700; }
+    footer p + p { margin-top: 6px; }
+
+    /* ── SCROLL REVEAL ───────────────────────── */
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal {
+        opacity: 0;
+        transform: translateY(22px);
+        transition: opacity 0.55s ease, transform 0.55s ease;
+      }
+      .reveal.in { opacity: 1; transform: none; }
+      .reveal:nth-child(2) { transition-delay: 0.08s; }
+      .reveal:nth-child(3) { transition-delay: 0.16s; }
+      .reveal:nth-child(4) { transition-delay: 0.24s; }
+      .reveal:nth-child(5) { transition-delay: 0.08s; }
+      .reveal:nth-child(6) { transition-delay: 0.16s; }
+    }
+
+    /* ── RESPONSIVE ──────────────────────────── */
+    @media (max-width: 760px) {
+      section { padding: 60px 0; }
+      .rollen-grid, .feat-grid, .feat-grid-2,
+      .t-grid, .tech-grid { grid-template-columns: 1fr; gap: 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .panels { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     HERO
+══════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-kicker">OSG Twente &nbsp;·&nbsp; Schooljaar 2025–2026</div>
+    <h1 class="hero-title">Elk leerling heeft<br>een <em>verhaal.</em></h1>
+    <p class="hero-desc">
+      De portfolio-applicatie geeft iedere leerling van OSG Twente een vaste digitale plek voor prestaties, werkstukken en persoonlijke groei — toegankelijk via het bestaande schoolportaal.
+    </p>
+    <div class="hero-chips">
+      <span class="chip">SSO via portaal</span>
+      <span class="chip">Cijfers &amp; doelen</span>
+      <span class="chip">CV-builder</span>
+      <span class="chip">Werkstukken met foto's</span>
+      <span class="chip">Docentenoverzicht</span>
+      <span class="chip">Aanpasbare huisstijl</span>
+    </div>
+  </div>
+  <div class="hero-rule"></div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     DRIE ROLLEN
+══════════════════════════════════════════ -->
+<section class="rollen">
+  <div class="container">
+    <div class="s-header">
+      <p class="eyebrow">Voor iedereen</p>
+      <h2 class="s-title">Drie rollen, één platform</h2>
+      <p class="s-sub">Leerlingen, docenten en beheerders krijgen elk een weergave die past bij wat zij nodig hebben.</p>
+    </div>
+
+    <div class="rollen-grid">
+      <div class="rol-card reveal">
+        <div class="rol-icon">🎓</div>
+        <h3>Leerling</h3>
+        <p>Bouw en beheer je eigen digitale portfolio. Voeg cijfers toe, beschrijf je doelen, upload werkstukken, stel een CV op en leg referenties vast — alles op één plek.</p>
+      </div>
+      <div class="rol-card reveal">
+        <div class="rol-icon">📋</div>
+        <h3>Docent</h3>
+        <p>Bekijk het portfolio van al je leerlingen in een doorzoekbaar overzicht. Open een volledig profiel met één klik en zie precies wat de leerling heeft ingevuld.</p>
+      </div>
+      <div class="rol-card reveal">
+        <div class="rol-icon">⚙️</div>
+        <h3>Beheerder</h3>
+        <p>Wijs docent- en beheerdersrollen toe, pas de huisstijl aan en upload het schoollogo. Beheer vanuit één overzichtelijk dashboard.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     DASHBOARD MOCKUP
+══════════════════════════════════════════ -->
+<section class="mockup-section">
+  <div class="container">
+    <p class="eyebrow">Zo ziet het eruit</p>
+    <h2 class="s-title">Het leerlingportfolio</h2>
+    <p class="s-sub">Het dashboard geeft een leerling in één oogopslag een overzicht — van recente cijfers tot doelen, skills en werkstukken.</p>
+
+    <div class="mockup-center reveal">
+      <div class="browser-frame">
+        <!-- Browser chrome -->
+        <div class="browser-bar">
+          <div class="b-dots">
+            <div class="b-dot bd-r"></div>
+            <div class="b-dot bd-y"></div>
+            <div class="b-dot bd-g"></div>
+          </div>
+          <div class="b-url">portfolio.osgtwente.nl</div>
+        </div>
+
+        <!-- App shell -->
+        <div class="app-shell" style="height: 430px;">
+          <!-- Header -->
+          <div class="app-header">
+            <div class="app-logo">Portfolio</div>
+            <div class="app-hname">Lisa van den Berg</div>
+            <button class="app-hbtn">Afmelden</button>
+          </div>
+
+          <!-- Body -->
+          <div class="app-body">
+            <!-- Sidebar -->
+            <div class="app-nav">
+              <div class="ni a">🏠</div>
+              <div class="ni">👤</div>
+              <div class="ni">📊</div>
+              <div class="ni">🎯</div>
+              <div class="ni">📄</div>
+              <div class="ni">📝</div>
+              <div class="ni">🖼️</div>
+            </div>
+
+            <!-- Main -->
+            <div class="app-main">
+              <!-- Welcome -->
+              <div class="aw">
+                <div class="aw-av">L</div>
+                <div>
+                  <div class="aw-name">Welkom, Lisa</div>
+                  <div class="aw-sub">Hier is een overzicht van je portfolio</div>
+                </div>
+              </div>
+
+              <!-- Stats -->
+              <div class="stats">
+                <div class="stat"><div class="num">7,9</div><div class="lbl">Gem. cijfer</div></div>
+                <div class="stat"><div class="num">14</div><div class="lbl">Cijfers</div></div>
+                <div class="stat"><div class="num">4</div><div class="lbl">Doelen</div></div>
+                <div class="stat"><div class="num">6</div><div class="lbl">Werkstukken</div></div>
+              </div>
+
+              <!-- Panels -->
+              <div class="panels">
+                <div class="panel">
+                  <div class="pttl">Mijn cijfers</div>
+                  <div class="grade-row"><span>Nederlands</span><span class="gbadge">8,2</span></div>
+                  <div class="grade-row"><span>Wiskunde</span><span class="gbadge">7,5</span></div>
+                  <div class="grade-row"><span>Economie</span><span class="gbadge">8,0</span></div>
+                  <div class="grade-row"><span>Duits</span><span class="gbadge gbadge-amber">6,8</span></div>
+                </div>
+                <div class="panel">
+                  <div class="pttl">Over mij</div>
+                  <div class="skill-chips">
+                    <span class="sc">Creatief</span>
+                    <span class="sc">Teamwork</span>
+                    <span class="sc">Muziek</span>
+                    <span class="sc">Fotografie</span>
+                    <span class="sc">Organiseren</span>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="pttl">Doelen</div>
+                  <div class="goal-row">🎯 Beter worden in presenteren</div>
+                  <div class="goal-row">🎯 Stage afronden met minimaal een 8</div>
+                  <div class="goal-row">🎯 Kunstproject inleveren voor deadline</div>
+                </div>
+                <div class="panel">
+                  <div class="pttl">Werkstukken</div>
+                  <div class="foto-grid">
+                    <div class="foto" style="background:linear-gradient(135deg,rgba(9,175,217,0.25),rgba(13,76,146,0.2))"></div>
+                    <div class="foto" style="background:linear-gradient(135deg,rgba(13,76,146,0.18),rgba(9,175,217,0.28))"></div>
+                    <div class="foto" style="background:linear-gradient(135deg,rgba(9,175,217,0.2),rgba(13,76,146,0.15))"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     FUNCTIES LEERLINGEN
+══════════════════════════════════════════ -->
+<section class="features">
+  <div class="container">
+    <div class="s-header">
+      <p class="eyebrow">Functies — leerling</p>
+      <h2 class="s-title">Zes secties, één portfolio</h2>
+      <p class="s-sub">Iedere leerling vult zijn of haar portfolio in aan de hand van zes vaste onderdelen.</p>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-card reveal">
+        <div class="feat-icon">👤</div>
+        <h3>Over mij</h3>
+        <p>Profielfoto, naam, bio, skills en hobby's. De persoonlijke pagina die van iedere leerling een gezicht maakt.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📊</div>
+        <h3>Mijn cijfers</h3>
+        <p>Resultaten per vak bijhouden, inclusief automatisch berekend gemiddelde en een visuele kleurcodering per cijfer.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🎯</div>
+        <h3>Doelen</h3>
+        <p>Persoonlijke leerdoelen vastleggen: wat wil je leren en hoe ga je dat aanpakken?</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📄</div>
+        <h3>Mijn CV</h3>
+        <p>Adresgegevens, telefoonnummer, vaardigheden en werkervaring overzichtelijk op een rij.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📝</div>
+        <h3>Referenties</h3>
+        <p>Naam, vak en contactgegevens van de vakleerkracht en stageleerkracht, klaar om te gebruiken.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🖼️</div>
+        <h3>Werkstukken</h3>
+        <p>Foto's uploaden van creatief werk, ingedeeld per vak met datum en een korte toelichting.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     DOCENTEN
+══════════════════════════════════════════ -->
+<section class="features-alt teacher-section">
+  <div class="container">
+    <div class="s-header">
+      <p class="eyebrow">Functies — docent</p>
+      <h2 class="s-title">Alle leerlingen in beeld</h2>
+      <p class="s-sub">Docenten hebben directe toegang tot het portfolio van iedere leerling.</p>
+    </div>
+
+    <div class="t-grid">
+      <!-- Teacher mockup -->
+      <div class="reveal">
+        <div class="browser-frame">
+          <div class="browser-bar">
+            <div class="b-dots">
+              <div class="b-dot bd-r"></div>
+              <div class="b-dot bd-y"></div>
+              <div class="b-dot bd-g"></div>
+            </div>
+            <div class="b-url">portfolio.osgtwente.nl/overzicht</div>
+          </div>
+          <div class="app-shell" style="height: 290px;">
+            <div class="app-header">
+              <div class="app-logo">Portfolio</div>
+              <div class="app-hname">
+                Mevr. de Vries &nbsp;
+                <span style="background:rgba(255,255,255,0.18);border-radius:3px;padding:1px 5px;font-size:0.58rem;">Docent</span>
+              </div>
+            </div>
+            <div class="app-body">
+              <div class="app-nav">
+                <div class="ni">🏠</div>
+                <div class="ni a">📋</div>
+              </div>
+              <div class="app-main">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-family:'Titillium Web',sans-serif;font-weight:700;font-size:0.82rem;color:#0d1f3c;">Leerlingoverzicht</span>
+                  <span style="font-size:0.62rem;color:#4a6580;">24 leerlingen</span>
+                </div>
+                <div class="app-search">🔍&nbsp;&nbsp;Zoeken op naam of e-mail…</div>
+                <div class="sc-grid">
+                  <div class="sc-card">
+                    <div class="sc-av">A</div>
+                    <div class="sc-name">Anna Bakker</div>
+                    <div class="sc-email">a.bakker@osgtwente.nl</div>
+                  </div>
+                  <div class="sc-card">
+                    <div class="sc-av">B</div>
+                    <div class="sc-name">Bas de Groot</div>
+                    <div class="sc-email">b.degroot@osgtwente.nl</div>
+                  </div>
+                  <div class="sc-card">
+                    <div class="sc-av">C</div>
+                    <div class="sc-name">Cara Smit</div>
+                    <div class="sc-email">c.smit@osgtwente.nl</div>
+                  </div>
+                  <div class="sc-card">
+                    <div class="sc-av">D</div>
+                    <div class="sc-name">Daan Visser</div>
+                    <div class="sc-email">d.visser@osgtwente.nl</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature cards -->
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="feat-card reveal" style="background:var(--white);">
+          <div class="feat-icon">📋</div>
+          <h3>Leerlingoverzicht</h3>
+          <p>Een doorzoekbaar grid met alle leerlingen van de school. Filter direct op naam of e-mailadres en klik door naar het individuele portfolio.</p>
+        </div>
+        <div class="feat-card reveal" style="background:var(--white);">
+          <div class="feat-icon">🔍</div>
+          <h3>Volledig portfolio inzien</h3>
+          <p>Open het complete portfolio van een leerling — profiel, cijfers, doelen, CV, referenties en werkstukken — precies zoals de leerling het zelf ziet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     BEHEERDERS
+══════════════════════════════════════════ -->
+<section class="features">
+  <div class="container">
+    <div class="s-header">
+      <p class="eyebrow">Functies — beheerder</p>
+      <h2 class="s-title">In control</h2>
+      <p class="s-sub">Beheerders regelen rollen en de uitstraling van de applicatie.</p>
+    </div>
+
+    <div class="feat-grid-2">
+      <div class="feat-card reveal">
+        <div class="feat-icon">👥</div>
+        <h3>Gebruikersbeheer</h3>
+        <p>Wijs docent- en beheerdersrollen toe aan gebruikers met één klik. Zie wanneer iedereen voor het laatst heeft ingelogd — alles in één tabel.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🎨</div>
+        <h3>Huisstijl instellen</h3>
+        <p>Kies een kleurthema (standaard marineblauw of de 't Genseler cyaan-stijl) en upload het schoollogo. De huisstijl geldt direct voor alle gebruikers.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     TECHNISCH
+══════════════════════════════════════════ -->
+<section class="tech" style="background:var(--off-white);">
+  <div class="container">
+    <p class="eyebrow">Technisch</p>
+    <h2 class="s-title">Gebouwd voor de school</h2>
+
+    <div class="tech-grid">
+      <ul class="tech-list">
+        <li>
+          <div class="dot"></div>
+          <span><strong>SSO via schoolportaal</strong> — Leerlingen en medewerkers loggen in met hun bestaande schoolaccount. Geen apart account aanmaken, geen extra wachtwoord onthouden.</span>
+        </li>
+        <li>
+          <div class="dot"></div>
+          <span><strong>Eigen server</strong> — De applicatie draait op de server van de school. Alle gegevens blijven binnen de schoolomgeving.</span>
+        </li>
+        <li>
+          <div class="dot"></div>
+          <span><strong>Dark mode</strong> — Leerlingen kunnen de applicatie in donker thema gebruiken. Voorkeur wordt opgeslagen per browser.</span>
+        </li>
+        <li>
+          <div class="dot"></div>
+          <span><strong>Responsief</strong> — Werkt op laptops, tablets en telefoons zonder aparte app te installeren.</span>
+        </li>
+        <li>
+          <div class="dot"></div>
+          <span><strong>Huisstijl aanpasbaar</strong> — Kleurthema en logo zijn door de beheerder in te stellen zonder technische kennis.</span>
+        </li>
+      </ul>
+
+      <div class="tech-card reveal">
+        <h3>Inloggen via het portaal</h3>
+        <p>
+          Leerlingen en medewerkers gebruiken het vertrouwde inlogscherm van het schoolportaal.
+          De portfolio-app neemt die sessie direct over — geen nieuw account, geen extra stap.
+          Na uitloggen eindigt de sessie in beide applicaties tegelijk.
+        </p>
+        <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border);">
+          <div style="font-size:0.78rem;font-weight:700;font-family:'Titillium Web',sans-serif;margin-bottom:8px;color:var(--text);">Technologie</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            <span style="background:rgba(13,76,146,0.07);color:var(--navy);border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:600;">Flask 3</span>
+            <span style="background:rgba(13,76,146,0.07);color:var(--navy);border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:600;">React 18</span>
+            <span style="background:rgba(13,76,146,0.07);color:var(--navy);border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:600;">PostgreSQL</span>
+            <span style="background:rgba(13,76,146,0.07);color:var(--navy);border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:600;">PM2 / NGINX</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════ -->
+<footer>
+  <p><strong>Portfolio — OSG Twente</strong></p>
+  <p>Gebouwd voor en door OSG Twente &nbsp;·&nbsp; Schooljaar 2025–2026</p>
+</footer>
+
+
+<script>
+  const io = new IntersectionObserver(
+    entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } }),
+    { threshold: 0.1 }
+  )
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el))
+</script>
+</body>
+</html>
