@@ -2,6 +2,20 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 const EMPTY = { vak: '', gemaakt_bij: '', datum: '', trots_omdat: '' }
 
+function displayDatum(d) {
+  if (!d) return ''
+  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : d
+}
+
+function toInputDate(d) {
+  if (!d) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d
+  const m = d.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/)
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
+  return ''
+}
+
 // ── Inline lightbox ───────────────────────────────────────────────────────────
 
 function Lightbox({ url, onClose }) {
@@ -123,7 +137,7 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
           <>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: '#e53e3e' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Dit heb ik gemaakt bij</label><input className="edit-input" value={form.gemaakt_bij} onChange={set('gemaakt_bij')} placeholder="Bijv. een opdracht, stage…" /></div>
-            <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" value={form.datum} onChange={set('datum')} placeholder="dd-mm-jjjj" /></div>
+            <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" type="date" value={toInputDate(form.datum)} onChange={set('datum')} /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Ik ben hier trots op omdat</label><textarea className="edit-input" value={form.trots_omdat} onChange={set('trots_omdat')} rows={3} placeholder="Vertel waarom je hier trots op bent…" /></div>
             <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
               <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>{saving ? 'Opslaan…' : 'Opslaan'}</button>
@@ -134,7 +148,7 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
           <>
             {item.vak        && <div>{label('Vak')}<div style={{ fontWeight: 600, fontSize: '0.92rem', marginTop: '1px' }}>{item.vak}</div></div>}
             {item.gemaakt_bij && <div>{label('Dit heb ik gemaakt bij')}<div style={{ fontSize: '0.85rem', marginTop: '1px' }}>{item.gemaakt_bij}</div></div>}
-            {item.datum      && <div>{label('Datum')}<div style={{ fontSize: '0.85rem', marginTop: '1px' }}>{item.datum}</div></div>}
+            {item.datum      && <div>{label('Datum')}<div style={{ fontSize: '0.85rem', marginTop: '1px' }}>{displayDatum(item.datum)}</div></div>}
             {item.trots_omdat && <div>{label('Ik ben hier trots op omdat')}<div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginTop: '1px', lineHeight: 1.5 }}>{item.trots_omdat}</div></div>}
             {!item.vak && !item.gemaakt_bij && !item.datum && !item.trots_omdat && <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>Nog niet ingevuld.</div>}
             <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', paddingTop: '8px' }}>
@@ -152,17 +166,21 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
 
 function AddForm({ onAdded, onCancel }) {
   const [form, setForm]      = useState(EMPTY)
-  const [previewUrl, setPreview] = useState(null)
+  const [pending, setPending] = useState([]) // [{dataUrl, file}]
   const [saving, setSaving]  = useState(false)
-  const fileRef              = useRef(null)
+  const inputRef             = useRef()
 
   function set(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
-  function pickPhoto(file) {
-    fileRef.current = file
-    const reader = new FileReader()
-    reader.onload = e => setPreview(e.target.result)
-    reader.readAsDataURL(file)
+
+  function addFiles(fileList) {
+    Array.from(fileList).forEach(file => {
+      const reader = new FileReader()
+      reader.onload = e => setPending(ps => [...ps, { dataUrl: e.target.result, file }])
+      reader.readAsDataURL(file)
+    })
   }
+
+  function removeFile(idx) { setPending(ps => ps.filter((_, i) => i !== idx)) }
 
   async function submit(e) {
     e.preventDefault()
@@ -173,39 +191,37 @@ function AddForm({ onAdded, onCancel }) {
       fd.append('gemaakt_bij', form.gemaakt_bij)
       fd.append('datum',       form.datum)
       fd.append('trots_omdat', form.trots_omdat)
-      if (fileRef.current) fd.append('file', fileRef.current)
+      pending.forEach(p => fd.append('file', p.file))
       const res  = await fetch('/api/werkstukken', { method: 'POST', body: fd })
       const item = await res.json()
       onAdded(item)
     } finally { setSaving(false) }
   }
 
-  const inputRef = useRef()
-  const src = previewUrl || null
+  const thumb = { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', display: 'block' }
+  const strip = { display: 'flex', gap: '6px', overflowX: 'auto', padding: '10px 12px', minHeight: '100px', alignItems: 'center', background: 'var(--surface2)' }
 
   return (
     <div style={{ background: 'var(--surface)', border: '1.5px solid var(--primary)', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-      {/* Photo pick area */}
-      <div
-        onClick={() => inputRef.current.click()}
-        style={{ width: '100%', aspectRatio: '4/3', background: src ? 'transparent' : 'var(--surface2)', border: src ? 'none' : 'none', cursor: 'pointer', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-      >
-        {src && <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />}
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', opacity: src ? 0 : 1, transition: 'opacity 0.15s' }}
-          onMouseEnter={e => e.currentTarget.style.opacity = 1}
-          onMouseLeave={e => e.currentTarget.style.opacity = src ? 0 : 1}
-        >
-          <span style={{ fontSize: '1.6rem' }}>📷</span>
-          <span style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 600 }}>{src ? 'Foto wijzigen' : 'Foto toevoegen'}</span>
-          <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem' }}>Optioneel</span>
+      {/* Multi-photo picker strip */}
+      <div style={strip}>
+        {pending.map((p, i) => (
+          <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
+            <img src={p.dataUrl} alt="" style={thumb} />
+            <button onClick={() => removeFile(i)} style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#e53e3e', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+          </div>
+        ))}
+        <div onClick={() => inputRef.current.click()} style={{ width: '80px', height: '80px', borderRadius: '6px', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-dim)', flexShrink: 0, gap: '2px' }}>
+          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: '0.65rem' }}>Foto('s)</span>
         </div>
-        <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && pickPhoto(e.target.files[0])} />
+        <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => { addFiles(e.target.files); e.target.value = '' }} />
       </div>
 
       <form onSubmit={submit} style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: '#e53e3e' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required autoFocus /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Dit heb ik gemaakt bij</label><input className="edit-input" value={form.gemaakt_bij} onChange={set('gemaakt_bij')} placeholder="Bijv. een opdracht, stage…" /></div>
-        <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" value={form.datum} onChange={set('datum')} placeholder="dd-mm-jjjj" /></div>
+        <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" type="date" value={form.datum} onChange={set('datum')} /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Ik ben hier trots op omdat</label><textarea className="edit-input" value={form.trots_omdat} onChange={set('trots_omdat')} rows={3} placeholder="Vertel waarom je hier trots op bent…" /></div>
         <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
           <button className="btn btn-primary btn-sm" type="submit" disabled={saving}>{saving ? 'Toevoegen…' : 'Toevoegen'}</button>

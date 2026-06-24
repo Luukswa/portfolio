@@ -122,7 +122,7 @@ def add_werkstuk():
     gemaakt_bij = request.form.get('gemaakt_bij', '')
     datum       = request.form.get('datum', '')
     trots_omdat = request.form.get('trots_omdat', '')
-    file        = request.files.get('file')
+    files       = request.files.getlist('file')
 
     conn = get_conn()
     try:
@@ -135,12 +135,13 @@ def add_werkstuk():
             new_id = cur.fetchone()[0]
 
             fotos = []
-            if file and file.filename and _ext(file.filename) in ALLOWED_EXT:
-                cur.execute("INSERT INTO werkstuk_fotos (werkstuk_id) VALUES (%s) RETURNING id", (new_id,))
-                foto_id = cur.fetchone()[0]
-                filename = _save_foto_file(file, user_id, new_id, vak, foto_id, session['user']['display_name'])
-                cur.execute("UPDATE werkstuk_fotos SET filename=%s WHERE id=%s", (filename, foto_id))
-                fotos = [{'id': foto_id, 'url': f'/api/werkstukken/{new_id}/fotos/{foto_id}'}]
+            for file in files:
+                if file and file.filename and _ext(file.filename) in ALLOWED_EXT:
+                    cur.execute("INSERT INTO werkstuk_fotos (werkstuk_id) VALUES (%s) RETURNING id", (new_id,))
+                    foto_id = cur.fetchone()[0]
+                    filename = _save_foto_file(file, user_id, new_id, vak, foto_id, session['user']['display_name'])
+                    cur.execute("UPDATE werkstuk_fotos SET filename=%s WHERE id=%s", (filename, foto_id))
+                    fotos.append({'id': foto_id, 'url': f'/api/werkstukken/{new_id}/fotos/{foto_id}'})
 
             conn.commit()
         return jsonify({'id': new_id, 'vak': vak, 'gemaakt_bij': gemaakt_bij,
