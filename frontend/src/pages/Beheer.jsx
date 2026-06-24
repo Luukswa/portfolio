@@ -23,6 +23,7 @@ export default function Beheer() {
   const [users, setUsers] = useState(null)
   const { theme: activeTheme, setTheme, logoUrl, refreshBranding } = useBranding()
   const [savingTheme, setSavingTheme] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const logoRef = useRef()
 
@@ -70,6 +71,25 @@ export default function Beheer() {
     }
   }
 
+  async function downloadBackup() {
+    setDownloading(true)
+    try {
+      const r = await fetch('/api/admin/backup')
+      if (!r.ok) return
+      const blob = await r.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `portfolio-backup-${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   async function handleLogoDelete() {
     const r = await fetch('/api/admin/branding/logo', { method: 'DELETE' })
     if (r.ok) await refreshBranding()
@@ -106,6 +126,7 @@ export default function Beheer() {
 
       {/* ── Gebruikers ── */}
       {tab === 'gebruikers' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div className="table-wrap">
           <table>
             <thead>
@@ -159,6 +180,22 @@ export default function Beheer() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="card">
+          <div className="section-title" style={{ marginTop: 0, marginBottom: '8px' }}>Back-up</div>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-soft)', marginBottom: '16px', lineHeight: 1.6 }}>
+            Download alle portfoliogegevens als JSON-bestand — profielen, cijfers, doelen, CV's, referenties en werkstukken.
+            Bewaar het bestand op een veilige plek. Geüploade afbeeldingen zijn niet inbegrepen.
+          </p>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={downloadBackup}
+            disabled={downloading}
+          >
+            {downloading ? 'Bezig…' : 'Back-up downloaden'}
+          </button>
+        </div>
         </div>
       )}
 
