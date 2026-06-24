@@ -30,6 +30,9 @@ def _find_user_dir(user_id):
                 return entry.path
     return None
 
+def _foto_dir(user_dir):
+    return os.path.join(user_dir, 'werkstukken')
+
 
 def _ensure_table(cur):
     cur.execute("""
@@ -92,12 +95,13 @@ def add_werkstuk():
             if file and file.filename and _ext(file.filename) in ALLOWED_EXT:
                 ext = _ext(file.filename)
                 user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
-                os.makedirs(user_dir, exist_ok=True)
-                for f in os.listdir(user_dir):
+                foto_subdir = _foto_dir(user_dir)
+                os.makedirs(foto_subdir, exist_ok=True)
+                for f in os.listdir(foto_subdir):
                     if f.startswith(f'werkstuk_{new_id}.'):
-                        try: os.remove(os.path.join(user_dir, f))
+                        try: os.remove(os.path.join(foto_subdir, f))
                         except: pass
-                file.save(os.path.join(user_dir, f'werkstuk_{new_id}.{ext}'))
+                file.save(os.path.join(foto_subdir, f'werkstuk_{new_id}.{ext}'))
                 foto_url = f'/api/werkstukken/{new_id}/foto'
                 cur.execute("UPDATE werkstukken SET foto_url=%s WHERE id=%s", (foto_url, new_id))
 
@@ -135,11 +139,13 @@ def delete_werkstuk(werk_id):
             cur.execute("DELETE FROM werkstukken WHERE id=%s AND user_id=%s", (werk_id, user_id))
             conn.commit()
         user_dir = _find_user_dir(user_id)
-        if user_dir and os.path.exists(user_dir):
-            for f in os.listdir(user_dir):
-                if f.startswith(f'werkstuk_{werk_id}.'):
-                    try: os.remove(os.path.join(user_dir, f))
-                    except: pass
+        if user_dir:
+            foto_subdir = _foto_dir(user_dir)
+            if os.path.exists(foto_subdir):
+                for f in os.listdir(foto_subdir):
+                    if f.startswith(f'werkstuk_{werk_id}.'):
+                        try: os.remove(os.path.join(foto_subdir, f))
+                        except: pass
         return jsonify({'ok': True})
     finally:
         put_conn(conn)
@@ -157,14 +163,15 @@ def upload_foto(werk_id):
 
     ext = _ext(file.filename)
     user_dir = _find_user_dir(user_id) or _user_dir(session['user']['display_name'], user_id)
-    os.makedirs(user_dir, exist_ok=True)
+    foto_subdir = _foto_dir(user_dir)
+    os.makedirs(foto_subdir, exist_ok=True)
 
-    for f in os.listdir(user_dir):
+    for f in os.listdir(foto_subdir):
         if f.startswith(f'werkstuk_{werk_id}.'):
-            try: os.remove(os.path.join(user_dir, f))
+            try: os.remove(os.path.join(foto_subdir, f))
             except: pass
 
-    file.save(os.path.join(user_dir, f'werkstuk_{werk_id}.{ext}'))
+    file.save(os.path.join(foto_subdir, f'werkstuk_{werk_id}.{ext}'))
     foto_url = f'/api/werkstukken/{werk_id}/foto'
 
     conn = get_conn()
@@ -192,7 +199,9 @@ def get_foto(werk_id):
         return '', 404
     user_dir = _find_user_dir(row[0])
     if user_dir:
-        for f in os.listdir(user_dir):
-            if f.startswith(f'werkstuk_{werk_id}.'):
-                return send_from_directory(user_dir, f)
+        foto_subdir = _foto_dir(user_dir)
+        if os.path.exists(foto_subdir):
+            for f in os.listdir(foto_subdir):
+                if f.startswith(f'werkstuk_{werk_id}.'):
+                    return send_from_directory(foto_subdir, f)
     return '', 404
