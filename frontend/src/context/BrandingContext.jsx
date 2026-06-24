@@ -31,15 +31,15 @@ function applyTheme(name) {
   Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v))
 }
 
-const DEFAULT = { appName: 'Portfolio', primaryColor: '#0d4c92', logoUrl: '/logo.png', theme: 'standaard' }
+const DEFAULT = { appName: 'Portfolio', primaryColor: '#0d4c92', logoUrl: '', theme: 'standaard' }
 
-const BrandingContext = createContext({ ...DEFAULT, setTheme: () => {} })
+const BrandingContext = createContext({ ...DEFAULT, setTheme: () => {}, refreshBranding: () => {} })
 
 export function BrandingProvider({ children }) {
   const [branding, setBranding] = useState(DEFAULT)
 
-  useEffect(() => {
-    fetch('/api/config/branding')
+  function load() {
+    return fetch('/api/config/branding')
       .then(r => r.json())
       .then(data => {
         document.title = data.appName || DEFAULT.appName
@@ -47,15 +47,19 @@ export function BrandingProvider({ children }) {
         setBranding({ ...DEFAULT, ...data })
       })
       .catch(() => {})
-  }, [])
+  }
+
+  useEffect(() => { load() }, [])
 
   const setTheme = useCallback((name) => {
     applyTheme(name)
     setBranding(b => ({ ...b, theme: name }))
   }, [])
 
+  const refreshBranding = useCallback(() => load(), [])
+
   return (
-    <BrandingContext.Provider value={{ ...branding, setTheme }}>
+    <BrandingContext.Provider value={{ ...branding, setTheme, refreshBranding }}>
       {children}
     </BrandingContext.Provider>
   )

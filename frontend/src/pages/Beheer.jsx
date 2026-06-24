@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useBranding } from '../context/BrandingContext'
@@ -10,7 +10,7 @@ const THEME_META = {
     swatches: ['#0d4c92', '#09afd9', '#0a3d78'],
   },
   genseler: {
-    label: "’t Genseler huisstijl",
+    label: "'t Genseler huisstijl",
     description: 'Zomerlucht cyaan · Golven blauw · Morgenrood rood',
     swatches: ['#00bcdf', '#006684', '#ed1c24'],
   },
@@ -20,8 +20,10 @@ export default function Beheer() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [users, setUsers] = useState(null)
-  const { theme: activeTheme, setTheme } = useBranding()
+  const { theme: activeTheme, setTheme, logoUrl, refreshBranding } = useBranding()
   const [savingTheme, setSavingTheme] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const logoRef = useRef()
 
   useEffect(() => {
     if (user && !user.is_admin) { navigate('/'); return }
@@ -50,6 +52,26 @@ export default function Beheer() {
     } finally {
       setSavingTheme(false)
     }
+  }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploadingLogo(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const r = await fetch('/api/admin/branding/logo', { method: 'POST', body: fd })
+      if (r.ok) await refreshBranding()
+    } finally {
+      setUploadingLogo(false)
+      if (logoRef.current) logoRef.current.value = ''
+    }
+  }
+
+  async function handleLogoDelete() {
+    const r = await fetch('/api/admin/branding/logo', { method: 'DELETE' })
+    if (r.ok) await refreshBranding()
   }
 
   function fmt(iso) {
@@ -123,12 +145,66 @@ export default function Beheer() {
         </table>
       </div>
 
-      {/* Theme / Huisstijl */}
+      {/* Huisstijl */}
       <div style={{ marginTop: '32px' }}>
         <div className="section-title" style={{ marginTop: 0, marginBottom: '4px' }}>Huisstijl</div>
-        <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '16px' }}>
-          Kies het kleurthema voor alle portfoliopagina's.
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '20px' }}>
+          Kies het kleurthema en het logo voor alle portfoliopagina's.
         </div>
+
+        {/* Logo */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '14px', color: 'var(--text)' }}>Logo</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+
+            {/* Preview box */}
+            <div style={{
+              width: '120px', height: '72px', borderRadius: '8px',
+              background: 'var(--primary)', border: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0, overflow: 'hidden',
+            }}>
+              {logoUrl
+                ? <img src={logoUrl} alt="Logo" style={{ maxWidth: '100px', maxHeight: '56px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                : <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>Geen logo</span>
+              }
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                cursor: uploadingLogo ? 'wait' : 'pointer',
+              }}>
+                <span className="btn btn-ghost btn-sm" style={{ pointerEvents: 'none' }}>
+                  {uploadingLogo ? 'Uploaden…' : logoUrl ? 'Logo wijzigen' : 'Logo uploaden'}
+                </span>
+                <input
+                  ref={logoRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                  style={{ display: 'none' }}
+                  onChange={handleLogoUpload}
+                  disabled={uploadingLogo}
+                />
+              </label>
+              {logoUrl && (
+                <button
+                  className="btn btn-ghost btn-sm"
+                  style={{ color: 'var(--red)', textAlign: 'left' }}
+                  onClick={handleLogoDelete}
+                  disabled={uploadingLogo}
+                >
+                  Logo verwijderen
+                </button>
+              )}
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                JPG, PNG, WebP of SVG. Het logo wordt wit weergegeven in de header.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Thema */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           {Object.entries(THEME_META).map(([key, meta]) => {
             const active = key === activeTheme
@@ -161,16 +237,12 @@ export default function Beheer() {
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-soft)', lineHeight: 1.5 }}>
                   {meta.description}
                 </div>
-                {active && (
-                  <span className="badge badge-primary" style={{ marginTop: '14px', display: 'inline-block' }}>
-                    Actief
-                  </span>
-                )}
-                {!active && (
-                  <span className="badge badge-gray" style={{ marginTop: '14px', display: 'inline-block', opacity: 0.7 }}>
-                    Activeren
-                  </span>
-                )}
+                <span
+                  className={`badge ${active ? 'badge-primary' : 'badge-gray'}`}
+                  style={{ marginTop: '14px', display: 'inline-block', opacity: active ? 1 : 0.7 }}
+                >
+                  {active ? 'Actief' : 'Activeren'}
+                </span>
               </div>
             )
           })}
