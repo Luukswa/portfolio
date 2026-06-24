@@ -63,8 +63,15 @@ export default function Overzicht() {
               background: 'var(--primary-light)', color: 'var(--primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.1rem',
+              position: 'relative', overflow: 'hidden',
             }}>
               {s.display_name?.[0]?.toUpperCase() ?? '?'}
+              <img
+                src={`/api/profile/avatar/${s.id}?t=1`}
+                alt=""
+                onError={e => { e.currentTarget.style.display = 'none' }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+              />
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text)' }}>{s.display_name}</div>
