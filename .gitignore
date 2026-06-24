@@ -14,8 +14,9 @@ frontend/dist/
 # Node modules
 frontend/node_modules/
 
-# Uploaded files
+# Uploaded files and backups
 uploads/
+backups/
 
 # OS
 .DS_Store

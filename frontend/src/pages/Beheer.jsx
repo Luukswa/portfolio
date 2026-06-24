@@ -23,14 +23,24 @@ export default function Beheer() {
   const [users, setUsers] = useState(null)
   const { theme: activeTheme, setTheme, logoUrl, refreshBranding } = useBranding()
   const [savingTheme, setSavingTheme] = useState(false)
-  const [downloading, setDownloading] = useState(false)
   const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [backups, setBackups] = useState(null)
+  const [creatingBackup, setCreatingBackup] = useState(false)
+  const [restoringName, setRestoringName] = useState(null)
+  const [deletingName, setDeletingName] = useState(null)
+  const [backupMsg, setBackupMsg] = useState(null)
   const logoRef = useRef()
 
   useEffect(() => {
     if (user && !user.is_admin) { navigate('/'); return }
     fetch('/api/admin/users').then(r => r.json()).then(setUsers).catch(() => {})
   }, [user])
+
+  useEffect(() => {
+    if (tab !== 'backup') return
+    setBackupMsg(null)
+    fetch('/api/admin/backups').then(r => r.json()).then(setBackups).catch(() => {})
+  }, [tab])
 
   async function toggle(id, field, current) {
     await fetch(`/api/admin/users/${id}`, {
@@ -71,22 +81,49 @@ export default function Beheer() {
     }
   }
 
-  async function downloadBackup() {
-    setDownloading(true)
+  async function createBackup() {
+    setCreatingBackup(true)
+    setBackupMsg(null)
     try {
-      const r = await fetch('/api/admin/backup')
-      if (!r.ok) return
-      const blob = await r.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `portfolio-backup-${new Date().toISOString().slice(0, 10)}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      const r = await fetch('/api/admin/backups', { method: 'POST' })
+      if (r.ok) {
+        const b = await r.json()
+        setBackups(prev => [b, ...(prev || [])])
+        setBackupMsg({ text: 'Back-up gemaakt.', ok: true })
+      } else {
+        setBackupMsg({ text: 'Back-up maken mislukt.', ok: false })
+      }
     } finally {
-      setDownloading(false)
+      setCreatingBackup(false)
+    }
+  }
+
+  async function restoreBackup(name) {
+    if (!window.confirm('Weet je zeker dat je wilt terugzetten? Alle huidige portfoliogegevens worden overschreven.')) return
+    setRestoringName(name)
+    setBackupMsg(null)
+    try {
+      const r = await fetch(`/api/admin/backups/${encodeURIComponent(name)}/restore`, { method: 'POST' })
+      if (r.ok) {
+        setBackupMsg({ text: 'Gegevens zijn teruggezet.', ok: true })
+      } else {
+        const d = await r.json().catch(() => ({}))
+        setBackupMsg({ text: d.error || 'Terugzetten mislukt.', ok: false })
+      }
+    } finally {
+      setRestoringName(null)
+    }
+  }
+
+  async function deleteBackup(name) {
+    if (!window.confirm('Deze back-up permanent verwijderen?')) return
+    setDeletingName(name)
+    setBackupMsg(null)
+    try {
+      const r = await fetch(`/api/admin/backups/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      if (r.ok) setBackups(prev => prev.filter(b => b.name !== name))
+    } finally {
+      setDeletingName(null)
     }
   }
 
@@ -110,7 +147,9 @@ export default function Beheer() {
           <div className="subtitle">
             {tab === 'gebruikers'
               ? `${users.length} gebruiker${users.length !== 1 ? 's' : ''}`
-              : 'Thema en logo instellen'}
+              : tab === 'huisstijl'
+              ? 'Thema en logo instellen'
+              : 'Back-ups beheren'}
           </div>
         </div>
       </div>
@@ -122,11 +161,13 @@ export default function Beheer() {
         <button className={`tab-btn${tab === 'huisstijl' ? ' active' : ''}`} onClick={() => setTab('huisstijl')}>
           Huisstijl
         </button>
+        <button className={`tab-btn${tab === 'backup' ? ' active' : ''}`} onClick={() => setTab('backup')}>
+          Back-up
+        </button>
       </div>
 
       {/* ── Gebruikers ── */}
       {tab === 'gebruikers' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div className="table-wrap">
           <table>
             <thead>
@@ -180,22 +221,6 @@ export default function Beheer() {
               ))}
             </tbody>
           </table>
-        </div>
-
-        <div className="card">
-          <div className="section-title" style={{ marginTop: 0, marginBottom: '8px' }}>Back-up</div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-soft)', marginBottom: '16px', lineHeight: 1.6 }}>
-            Download alle portfoliogegevens als JSON-bestand — profielen, cijfers, doelen, CV's, referenties en werkstukken.
-            Bewaar het bestand op een veilige plek. Geüploade afbeeldingen zijn niet inbegrepen.
-          </p>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={downloadBackup}
-            disabled={downloading}
-          >
-            {downloading ? 'Bezig…' : 'Back-up downloaden'}
-          </button>
-        </div>
         </div>
       )}
 
@@ -296,6 +321,74 @@ export default function Beheer() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* ── Back-up ── */}
+      {tab === 'backup' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {backupMsg && (
+            <div style={{
+              padding: '12px 16px', borderRadius: '8px', fontSize: '0.875rem',
+              background: backupMsg.ok ? 'var(--primary-light)' : 'rgba(220,38,38,0.08)',
+              color: backupMsg.ok ? 'var(--primary)' : '#dc2626',
+              border: `1px solid ${backupMsg.ok ? 'var(--primary-dim)' : 'rgba(220,38,38,0.25)'}`,
+            }}>
+              {backupMsg.text}
+            </div>
+          )}
+
+          <div className="card">
+            <div className="section-title" style={{ marginTop: 0, marginBottom: '8px' }}>Nieuwe back-up</div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-soft)', marginBottom: '16px', lineHeight: 1.6 }}>
+              Maakt een momentopname van alle portfoliogegevens en slaat deze op de server op.
+              Geüploade afbeeldingen zijn niet inbegrepen.
+            </p>
+            <button className="btn btn-primary btn-sm" onClick={createBackup} disabled={creatingBackup}>
+              {creatingBackup ? 'Bezig…' : 'Nieuwe back-up maken'}
+            </button>
+          </div>
+
+          <div className="card">
+            <div className="section-title" style={{ marginTop: 0, marginBottom: '16px' }}>Opgeslagen back-ups</div>
+            {backups === null ? (
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.875rem' }}>Laden…</div>
+            ) : backups.length === 0 ? (
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.875rem' }}>Nog geen back-ups gemaakt.</div>
+            ) : backups.map((b, i) => (
+              <div key={b.name} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 0',
+                borderBottom: i < backups.length - 1 ? '1px solid var(--border)' : 'none',
+              }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                    {new Date(b.created_at).toLocaleString('nl-NL', { dateStyle: 'long', timeStyle: 'short' })}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                    {Math.round(b.size / 1024)} KB
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => restoreBackup(b.name)}
+                    disabled={restoringName === b.name || deletingName === b.name}
+                  >
+                    {restoringName === b.name ? 'Bezig…' : 'Terugzetten'}
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => deleteBackup(b.name)}
+                    disabled={restoringName === b.name || deletingName === b.name}
+                    style={{ color: '#dc2626' }}
+                  >
+                    {deletingName === b.name ? '…' : 'Verwijderen'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </>
