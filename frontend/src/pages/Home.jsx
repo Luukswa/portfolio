@@ -1,6 +1,44 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+
+function Lightbox({ urls, initialIndex = 0, title, onClose }) {
+  const [idx, setIdx] = useState(initialIndex)
+  const multi = urls.length > 1
+  useEffect(() => {
+    const h = e => {
+      if (e.key === 'Escape')     onClose()
+      if (e.key === 'ArrowLeft')  setIdx(i => (i - 1 + urls.length) % urls.length)
+      if (e.key === 'ArrowRight') setIdx(i => (i + 1) % urls.length)
+    }
+    document.addEventListener('keydown', h)
+    return () => document.removeEventListener('keydown', h)
+  }, [onClose, urls.length])
+  const navBtn = (onClick, label) => (
+    <button onClick={onClick} style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', color: '#fff', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{label}</button>
+  )
+  return (
+    <div onClick={e => { if (e.target === e.currentTarget) onClose() }} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', gap: '12px' }}>
+      <div style={{ width: '100%', maxWidth: '90vw', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {title && <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.92rem', fontFamily: 'var(--title)', flex: 1 }}>{title}</span>}
+        {multi && <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{idx + 1} / {urls.length}</span>}
+        <button onClick={onClose} style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '90vw', width: '100%', justifyContent: 'center' }}>
+        {multi && navBtn(() => setIdx(i => (i - 1 + urls.length) % urls.length), '‹')}
+        <img key={idx} src={`${urls[idx]}?t=1`} alt="" style={{ maxWidth: multi ? 'calc(90vw - 120px)' : '90vw', maxHeight: 'calc(90vh - 140px)', objectFit: 'contain', borderRadius: '8px', display: 'block' }} />
+        {multi && navBtn(() => setIdx(i => (i + 1) % urls.length), '›')}
+      </div>
+      {multi && (
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', maxWidth: '90vw', padding: '4px 0' }}>
+          {urls.map((u, i) => (
+            <img key={i} src={`${u}?t=1`} alt="" onClick={() => setIdx(i)} style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '5px', cursor: 'pointer', flexShrink: 0, border: i === idx ? '2px solid #fff' : '2px solid transparent', opacity: i === idx ? 1 : 0.55, transition: 'opacity 0.15s' }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function cijferColor(c) {
   if (c >= 7)   return 'badge-green'
@@ -40,6 +78,7 @@ export default function Home() {
   const { user }  = useAuth()
   const [data, setData]     = useState(null)
   const [avatar, setAvatar] = useState(null)
+  const [lightbox, setLightbox] = useState(null)
 
   useEffect(() => {
     const get     = (url, fb)  => fetch(url).then(r => r.ok ? r.json() : fb).catch(() => fb)
@@ -194,11 +233,16 @@ export default function Home() {
           {werkstukken.length === 0 ? <Dim text="Nog geen werkstukken toegevoegd." /> : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
               {werkstukken.slice(0, 6).map(w => {
-                const foto = w.fotos?.[0]
+                const urls = (w.fotos || []).map(f => f.url)
+                const hasFotos = urls.length > 0
                 return (
-                  <div key={w.id} style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                    {foto
-                      ? <img src={`${foto.url}?t=1`} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
+                  <div
+                    key={w.id}
+                    onClick={() => hasFotos && setLightbox({ urls, title: w.vak || '' })}
+                    style={{ borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface2)', cursor: hasFotos ? 'pointer' : 'default' }}
+                  >
+                    {hasFotos
+                      ? <img src={`${urls[0]}?t=1`} alt="" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block' }} />
                       : <div style={{ width: '100%', aspectRatio: '1', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', color: 'var(--text-dim)' }}>🖼️</div>
                     }
                     <div style={{ padding: '4px 6px', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-soft)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.vak}</div>
@@ -252,6 +296,8 @@ export default function Home() {
         </Panel>
 
       </div>
+
+      {lightbox && <Lightbox urls={lightbox.urls} title={lightbox.title} onClose={() => setLightbox(null)} />}
     </div>
   )
 }
