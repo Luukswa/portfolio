@@ -214,13 +214,15 @@ textarea.edit-input { resize: vertical; min-height: 80px; }
 }
 .btn-signout:hover { background: rgba(255,255,255,0.2); color: #fff; border-color: rgba(255,255,255,0.4); }
 
-.app-body { display: flex; flex: 1; overflow: hidden; }
+.app-body { display: flex; flex: 1; }
 
 nav {
   width: 220px; background: var(--surface);
   border-right: 1px solid var(--border); padding: 20px 0 16px;
   flex-shrink: 0; overflow-y: auto; overflow-x: hidden;
   box-shadow: var(--shadow-sm); transition: width 0.2s ease;
+  position: sticky; top: 58px;
+  height: calc(100vh - 58px); align-self: flex-start;
 }
 
 .nav-toggle { display: flex; justify-content: flex-end; padding: 0 16px 10px; }
@@ -258,7 +260,7 @@ nav.collapsed .nav-item.active { border-right-color: var(--primary); border-left
 nav.collapsed .nav-item .ni-label { opacity: 0; width: 0; }
 nav.collapsed .nav-item .ni { width: 20px; }
 
-main { flex: 1; padding: 30px 36px; overflow-y: auto; background: var(--bg); }
+main { flex: 1; padding: 30px 36px; background: var(--bg); min-width: 0; }
 
 /* ── PAGE HEADER ───────────────────────────────── */
 .page-header {
