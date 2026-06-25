@@ -47,7 +47,7 @@ function FotoGrid({ fotos, editing, onAdd, onDelete }) {
     try { await onAdd(file) } finally { setUploading(false) }
   }
 
-  const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 88px)', gap: '6px' }
+  const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 120px)', gap: '6px' }
   const cell = { aspectRatio: '1', overflow: 'hidden', borderRadius: '6px' }
 
   if (!editing) {
@@ -258,7 +258,7 @@ function AddForm({ onAdded, onCancel }) {
 
         <div>
           {fieldLabel("Foto's")}
-          <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 88px)', gap: '6px' }}>
+          <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 120px)', gap: '6px' }}>
             {pending.map((p, i) => (
               <div key={i} style={{ aspectRatio: '1', overflow: 'hidden', borderRadius: '6px', position: 'relative' }}>
                 <img src={p.dataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
