@@ -8,7 +8,7 @@ function cijferBadge(c) {
 
 function fmt(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
 }
 
 export default function Cijfers() {
@@ -73,35 +73,17 @@ export default function Cijfers() {
 
       {/* Stats */}
       {grades.length > 0 && (
-        <div className="stats-row" style={{ marginBottom: '16px' }}>
-          <div className="stat blue">
-            <div className="stat-icon-wrap">📚</div>
-            <div className="stat-body">
-              <div className="num">{grades.length}</div>
-              <div className="lbl">Vakken</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '16px' }}>
+          {[
+            { value: avg,                                      label: 'Gemiddelde' },
+            { value: grades.length,                            label: 'Cijfers' },
+            { value: `${passes} / ${grades.length - passes}`, label: 'Vold. / Onvold.' },
+          ].map(s => (
+            <div key={s.label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px 16px', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.04em', lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-soft)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, fontFamily: 'var(--title)' }}>{s.label}</div>
             </div>
-          </div>
-          <div className={`stat ${parseFloat(avg) >= 5.5 ? 'green' : 'red'}`}>
-            <div className="stat-icon-wrap">⌀</div>
-            <div className="stat-body">
-              <div className="num">{avg}</div>
-              <div className="lbl">Gemiddelde</div>
-            </div>
-          </div>
-          <div className="stat green">
-            <div className="stat-icon-wrap">✓</div>
-            <div className="stat-body">
-              <div className="num">{passes}</div>
-              <div className="lbl">Voldoendes</div>
-            </div>
-          </div>
-          <div className="stat red">
-            <div className="stat-icon-wrap">✗</div>
-            <div className="stat-body">
-              <div className="num">{grades.length - passes}</div>
-              <div className="lbl">Onvoldoendes</div>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
