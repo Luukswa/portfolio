@@ -15,7 +15,7 @@ def _dsn():
 def get_pool():
     global _pool
     if _pool is None:
-        _pool = ConnectionPool(_dsn(), min_size=1, max_size=10, open=True)
+        _pool = ConnectionPool(_dsn(), min_size=2, max_size=20, open=True)
     return _pool
 
 def get_conn(timeout=5):

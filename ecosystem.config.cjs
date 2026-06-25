@@ -4,7 +4,7 @@ module.exports = {
       name: 'portfolio',
       cwd: './backend',
       script: 'python',
-      args: '-m waitress --host=127.0.0.1 --port=5000 app:app',
+      args: '-m waitress --host=127.0.0.1 --port=5000 --threads=16 app:app',
       interpreter: 'none',
       watch: false,
       autorestart: true,
