@@ -16,7 +16,7 @@ function toInputDate(d) {
   return ''
 }
 
-// ── Inline lightbox ───────────────────────────────────────────────────────────
+// ── Lightbox ──────────────────────────────────────────────────────────────────
 
 function Lightbox({ url, onClose }) {
   const close = useCallback(e => { if (e.target === e.currentTarget) onClose() }, [onClose])
@@ -35,9 +35,9 @@ function Lightbox({ url, onClose }) {
   )
 }
 
-// ── Photo strip (view + edit) ─────────────────────────────────────────────────
+// ── Photo grid (view + edit) ──────────────────────────────────────────────────
 
-function FotoStrip({ fotos, editing, onAdd, onDelete }) {
+function FotoGrid({ fotos, editing, onAdd, onDelete }) {
   const inputRef  = useRef()
   const [uploading, setUploading] = useState(false)
   const [lightbox, setLightbox]   = useState(null)
@@ -47,18 +47,18 @@ function FotoStrip({ fotos, editing, onAdd, onDelete }) {
     try { await onAdd(file) } finally { setUploading(false) }
   }
 
-  const thumb = { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', display: 'block', flexShrink: 0 }
-  const strip = { display: 'flex', gap: '6px', overflowX: 'auto', padding: '10px 12px', minHeight: '100px', alignItems: 'center', background: 'var(--surface2)', borderRadius: '6px 6px 0 0' }
+  const grid = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }
+  const cell = { aspectRatio: '1', overflow: 'hidden', borderRadius: '6px' }
 
   if (!editing) {
-    if (fotos.length === 0) return (
-      <div style={{ ...strip, justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.82rem' }}>Geen foto's</div>
-    )
+    if (fotos.length === 0) return null
     return (
       <>
-        <div style={strip}>
+        <div style={grid}>
           {fotos.map(f => (
-            <img key={f.id} src={`${f.url}?t=1`} alt="" style={{ ...thumb, cursor: 'pointer' }} onClick={() => setLightbox(f.url)} />
+            <div key={f.id} style={{ ...cell, cursor: 'pointer' }} onClick={() => setLightbox(f.url)}>
+              <img src={`${f.url}?t=1`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            </div>
           ))}
         </div>
         {lightbox && <Lightbox url={lightbox} onClose={() => setLightbox(null)} />}
@@ -67,25 +67,27 @@ function FotoStrip({ fotos, editing, onAdd, onDelete }) {
   }
 
   return (
-    <div style={strip}>
-      {fotos.map(f => (
-        <div key={f.id} style={{ position: 'relative', flexShrink: 0 }}>
-          <img src={`${f.url}?t=1`} alt="" style={thumb} />
-          <button
-            onClick={() => onDelete(f.id)}
-            style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#e53e3e', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
-          >×</button>
+    <>
+      <div style={grid}>
+        {fotos.map(f => (
+          <div key={f.id} style={{ ...cell, position: 'relative' }}>
+            <img src={`${f.url}?t=1`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            <button
+              onClick={() => onDelete(f.id)}
+              style={{ position: 'absolute', top: '4px', right: '4px', width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(220,38,38,0.9)', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >×</button>
+          </div>
+        ))}
+        <div
+          onClick={() => !uploading && inputRef.current.click()}
+          style={{ ...cell, border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: uploading ? 'wait' : 'pointer', color: 'var(--text-dim)', gap: '2px' }}
+        >
+          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{uploading ? '…' : '+'}</span>
+          <span style={{ fontSize: '0.65rem' }}>Foto</span>
         </div>
-      ))}
-      <div
-        onClick={() => !uploading && inputRef.current.click()}
-        style={{ width: '80px', height: '80px', borderRadius: '6px', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: uploading ? 'wait' : 'pointer', color: 'var(--text-dim)', flexShrink: 0, gap: '2px' }}
-      >
-        <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{uploading ? '…' : '+'}</span>
-        <span style={{ fontSize: '0.65rem' }}>Foto</span>
       </div>
       <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files[0] && handleAdd(e.target.files[0])} />
-    </div>
+    </>
   )
 }
 
@@ -126,32 +128,54 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
     setEditing(false)
   }
 
-  const label = txt => <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)' }}>{txt}</span>
+  const fieldLabel = txt => (
+    <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)' }}>{txt}</span>
+  )
+
+  const hdrVak  = editing ? form.vak  : item.vak
+  const hdrTitle = editing ? (form.gemaakt_bij || form.vak || 'Nieuw werkstuk') : (item.gemaakt_bij || item.vak || 'Werkstuk')
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
-      <FotoStrip fotos={fotos} editing={editing} onAdd={addFoto} onDelete={deleteFoto} />
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
 
-      <div style={{ padding: '14px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* ── Header ── */}
+      <div style={{ padding: '11px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        {hdrVak && <span className="badge badge-primary" style={{ flexShrink: 0 }}>{hdrVak}</span>}
+        <span style={{ fontWeight: 700, fontSize: '0.95rem', flex: 1, color: 'var(--text)' }}>{hdrTitle}</span>
+        {!editing && item.datum && (
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', flexShrink: 0 }}>{displayDatum(item.datum)}</span>
+        )}
+      </div>
+
+      {/* ── Body ── */}
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {editing ? (
           <>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: '#e53e3e' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Dit heb ik gemaakt bij</label><input className="edit-input" value={form.gemaakt_bij} onChange={set('gemaakt_bij')} placeholder="Bijv. een opdracht, stage…" /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" type="date" value={toInputDate(form.datum)} onChange={set('datum')} /></div>
             <div className="form-group" style={{ marginBottom: 0 }}><label>Ik ben hier trots op omdat</label><textarea className="edit-input" value={form.trots_omdat} onChange={set('trots_omdat')} rows={3} placeholder="Vertel waarom je hier trots op bent…" /></div>
-            <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+            <div>
+              {fieldLabel("Foto's")}
+              <div style={{ marginTop: '6px' }}>
+                <FotoGrid fotos={fotos} editing={true} onAdd={addFoto} onDelete={deleteFoto} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
               <button className="btn btn-primary btn-sm" onClick={save} disabled={saving}>{saving ? 'Opslaan…' : 'Opslaan'}</button>
               <button className="btn btn-ghost btn-sm" onClick={cancel}>Annuleren</button>
             </div>
           </>
         ) : (
           <>
-            {item.vak        && <div>{label('Vak')}<div style={{ fontWeight: 600, fontSize: '0.92rem', marginTop: '1px' }}>{item.vak}</div></div>}
-            {item.gemaakt_bij && <div>{label('Dit heb ik gemaakt bij')}<div style={{ fontSize: '0.85rem', marginTop: '1px' }}>{item.gemaakt_bij}</div></div>}
-            {item.datum      && <div>{label('Datum')}<div style={{ fontSize: '0.85rem', marginTop: '1px' }}>{displayDatum(item.datum)}</div></div>}
-            {item.trots_omdat && <div>{label('Ik ben hier trots op omdat')}<div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginTop: '1px', lineHeight: 1.5 }}>{item.trots_omdat}</div></div>}
-            {!item.vak && !item.gemaakt_bij && !item.datum && !item.trots_omdat && <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>Nog niet ingevuld.</div>}
-            <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', paddingTop: '8px' }}>
+            {item.trots_omdat && (
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-soft)', lineHeight: 1.6, margin: 0 }}>{item.trots_omdat}</p>
+            )}
+            <FotoGrid fotos={fotos} editing={false} onAdd={null} onDelete={null} />
+            {!item.trots_omdat && !item.gemaakt_bij && fotos.length === 0 && (
+              <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>Nog niet ingevuld.</div>
+            )}
+            <div style={{ display: 'flex', gap: '6px' }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>Bewerken</button>
               <button className="btn btn-danger btn-sm" onClick={() => onDeleted(item.id)}>Verwijderen</button>
             </div>
@@ -166,7 +190,7 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
 
 function AddForm({ onAdded, onCancel }) {
   const [form, setForm]      = useState(EMPTY)
-  const [pending, setPending] = useState([]) // [{dataUrl, file}]
+  const [pending, setPending] = useState([])
   const [saving, setSaving]  = useState(false)
   const inputRef             = useRef()
 
@@ -198,32 +222,46 @@ function AddForm({ onAdded, onCancel }) {
     } finally { setSaving(false) }
   }
 
-  const thumb = { width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', display: 'block' }
-  const strip = { display: 'flex', gap: '6px', overflowX: 'auto', padding: '10px 12px', minHeight: '100px', alignItems: 'center', background: 'var(--surface2)' }
+  const fieldLabel = txt => (
+    <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)' }}>{txt}</span>
+  )
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1.5px solid var(--primary)', borderRadius: '8px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-      {/* Multi-photo picker strip */}
-      <div style={strip}>
-        {pending.map((p, i) => (
-          <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-            <img src={p.dataUrl} alt="" style={thumb} />
-            <button onClick={() => removeFile(i)} style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', borderRadius: '50%', background: '#e53e3e', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-          </div>
-        ))}
-        <div onClick={() => inputRef.current.click()} style={{ width: '80px', height: '80px', borderRadius: '6px', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-dim)', flexShrink: 0, gap: '2px' }}>
-          <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>+</span>
-          <span style={{ fontSize: '0.65rem' }}>Foto('s)</span>
-        </div>
-        <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => { addFiles(e.target.files); e.target.value = '' }} />
+    <div style={{ background: 'var(--surface)', border: '1.5px solid var(--primary)', borderRadius: '10px', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+
+      {/* ── Header preview ── */}
+      <div style={{ padding: '11px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <span className="badge badge-primary" style={{ flexShrink: 0, opacity: form.vak ? 1 : 0.4 }}>{form.vak || 'Vak'}</span>
+        <span style={{ fontWeight: 700, fontSize: '0.95rem', flex: 1, color: form.gemaakt_bij ? 'var(--text)' : 'var(--text-dim)' }}>
+          {form.gemaakt_bij || 'Nieuw werkstuk'}
+        </span>
       </div>
 
-      <form onSubmit={submit} style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* ── Form ── */}
+      <form onSubmit={submit} style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Vak <span style={{ color: '#e53e3e' }}>*</span></label><input className="edit-input" value={form.vak} onChange={set('vak')} placeholder="Naam van het vak" required autoFocus /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Dit heb ik gemaakt bij</label><input className="edit-input" value={form.gemaakt_bij} onChange={set('gemaakt_bij')} placeholder="Bijv. een opdracht, stage…" /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Datum</label><input className="edit-input" type="date" value={form.datum} onChange={set('datum')} /></div>
         <div className="form-group" style={{ marginBottom: 0 }}><label>Ik ben hier trots op omdat</label><textarea className="edit-input" value={form.trots_omdat} onChange={set('trots_omdat')} rows={3} placeholder="Vertel waarom je hier trots op bent…" /></div>
-        <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+
+        <div>
+          {fieldLabel("Foto's")}
+          <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+            {pending.map((p, i) => (
+              <div key={i} style={{ aspectRatio: '1', overflow: 'hidden', borderRadius: '6px', position: 'relative' }}>
+                <img src={p.dataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                <button onClick={() => removeFile(i)} style={{ position: 'absolute', top: '4px', right: '4px', width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(220,38,38,0.9)', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+              </div>
+            ))}
+            <div onClick={() => inputRef.current.click()} style={{ aspectRatio: '1', borderRadius: '6px', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-dim)', gap: '2px' }}>
+              <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>+</span>
+              <span style={{ fontSize: '0.65rem' }}>Foto('s)</span>
+            </div>
+          </div>
+          <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => { addFiles(e.target.files); e.target.value = '' }} />
+        </div>
+
+        <div style={{ display: 'flex', gap: '6px' }}>
           <button className="btn btn-primary btn-sm" type="submit" disabled={saving}>{saving ? 'Toevoegen…' : 'Toevoegen'}</button>
           <button className="btn btn-ghost btn-sm" type="button" onClick={onCancel}>Annuleren</button>
         </div>
@@ -259,7 +297,7 @@ export default function Werkstukken() {
         {!adding && <button className="btn btn-primary" onClick={() => setAdding(true)}>+ Nieuw werkstuk</button>}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {adding && <AddForm onAdded={item => { setItems(it => [item, ...it]); setAdding(false) }} onCancel={() => setAdding(false)} />}
         {items.map(item => (
           <WerkstukCard
