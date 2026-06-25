@@ -192,6 +192,7 @@ function AddForm({ onAdded, onCancel }) {
   const [form, setForm]      = useState(EMPTY)
   const [pending, setPending] = useState([])
   const [saving, setSaving]  = useState(false)
+  const [error, setError]    = useState(null)
   const inputRef             = useRef()
 
   function set(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
@@ -209,6 +210,7 @@ function AddForm({ onAdded, onCancel }) {
   async function submit(e) {
     e.preventDefault()
     setSaving(true)
+    setError(null)
     try {
       const fd = new FormData()
       fd.append('vak',         form.vak)
@@ -216,10 +218,20 @@ function AddForm({ onAdded, onCancel }) {
       fd.append('datum',       form.datum)
       fd.append('trots_omdat', form.trots_omdat)
       pending.forEach(p => fd.append('file', p.file))
-      const res  = await fetch('/api/werkstukken', { method: 'POST', body: fd })
+      const res = await fetch('/api/werkstukken', { method: 'POST', body: fd })
+      if (!res.ok) {
+        setError(res.status === 413
+          ? 'De afbeelding is te groot. Verklein de foto en probeer opnieuw.'
+          : 'Er is iets misgegaan. Probeer het opnieuw.')
+        return
+      }
       const item = await res.json()
       onAdded(item)
-    } finally { setSaving(false) }
+    } catch {
+      setError('Er is iets misgegaan. Controleer je verbinding en probeer opnieuw.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const fieldLabel = txt => (
@@ -261,6 +273,11 @@ function AddForm({ onAdded, onCancel }) {
           <input ref={inputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => { addFiles(e.target.files); e.target.value = '' }} />
         </div>
 
+        {error && (
+          <div style={{ padding: '9px 12px', borderRadius: '7px', fontSize: '0.82rem', background: 'var(--red-dim)', color: 'var(--red)', border: '1px solid rgba(220,38,38,0.2)' }}>
+            {error}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '6px' }}>
           <button className="btn btn-primary btn-sm" type="submit" disabled={saving}>{saving ? 'Toevoegen…' : 'Toevoegen'}</button>
           <button className="btn btn-ghost btn-sm" type="button" onClick={onCancel}>Annuleren</button>
