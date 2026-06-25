@@ -236,7 +236,9 @@ function AddForm({ onAdded, onCancel }) {
       const item = await res.json()
       onAdded(item)
     } catch {
-      setError('Er is iets misgegaan. Controleer je verbinding en probeer opnieuw.')
+      setError(pending.length > 0
+        ? 'Upload mislukt. De afbeelding is mogelijk te groot — verklein de foto en probeer opnieuw.'
+        : 'Er is iets misgegaan. Controleer je verbinding en probeer opnieuw.')
     } finally {
       setSaving(false)
     }

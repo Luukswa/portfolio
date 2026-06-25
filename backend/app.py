@@ -14,6 +14,12 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = os.environ.get('FLASK_ENV') == 'production'
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20 MB
+
+from flask import jsonify as _jsonify
+@app.errorhandler(413)
+def too_large(_):
+    return _jsonify(error='De afbeelding is te groot (max. 20 MB).'), 413
 
 from routes.auth import auth_bp
 from routes.branding import branding_bp
