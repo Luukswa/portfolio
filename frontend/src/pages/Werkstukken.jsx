@@ -197,7 +197,15 @@ function AddForm({ onAdded, onCancel }) {
 
   function set(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
 
+  const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
+
   function addFiles(fileList) {
+    const tooBig = Array.from(fileList).filter(f => f.size > MAX_BYTES)
+    if (tooBig.length) {
+      setError(`${tooBig.map(f => f.name).join(', ')} ${tooBig.length === 1 ? 'is' : 'zijn'} te groot (max. 10 MB). Verklein de foto en probeer opnieuw.`)
+      return
+    }
+    setError(null)
     Array.from(fileList).forEach(file => {
       const reader = new FileReader()
       reader.onload = e => setPending(ps => [...ps, { dataUrl: e.target.result, file }])
