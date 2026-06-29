@@ -6,31 +6,25 @@ referenties_bp = Blueprint('referenties', __name__)
 
 
 def _ensure_table(cur):
+    # Migrate old fixed-column schema
+    cur.execute("""
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'referenties' AND column_name = 'ref1_datum'
+    """)
+    if cur.fetchone():
+        cur.execute("DROP TABLE referenties")
+
     cur.execute("""
         CREATE TABLE IF NOT EXISTS referenties (
-            user_id        INTEGER PRIMARY KEY,
-            ref1_datum     TEXT NOT NULL DEFAULT '',
-            ref1_naam      TEXT NOT NULL DEFAULT '',
-            ref1_vak       TEXT NOT NULL DEFAULT '',
-            ref1_opmerking TEXT NOT NULL DEFAULT '',
-            ref2_datum     TEXT NOT NULL DEFAULT '',
-            ref2_naam      TEXT NOT NULL DEFAULT '',
-            ref2_vak       TEXT NOT NULL DEFAULT '',
-            ref2_opmerking TEXT NOT NULL DEFAULT ''
+            id        SERIAL PRIMARY KEY,
+            user_id   INTEGER NOT NULL,
+            type      TEXT NOT NULL DEFAULT '',
+            naam      TEXT NOT NULL DEFAULT '',
+            datum     TEXT NOT NULL DEFAULT '',
+            vak       TEXT NOT NULL DEFAULT '',
+            opmerking TEXT NOT NULL DEFAULT ''
         )
     """)
-
-
-def _row_to_dict(row):
-    return {
-        'ref1': {'datum': row[0], 'naam': row[1], 'vak': row[2], 'opmerking': row[3]},
-        'ref2': {'datum': row[4], 'naam': row[5], 'vak': row[6], 'opmerking': row[7]},
-    }
-
-
-def _empty():
-    empty = {'datum': '', 'naam': '', 'vak': '', 'opmerking': ''}
-    return {'ref1': dict(empty), 'ref2': dict(empty)}
 
 
 @referenties_bp.route('/api/referenties')
@@ -43,11 +37,14 @@ def get_referenties():
             _ensure_table(cur)
             conn.commit()
             cur.execute(
-                "SELECT ref1_datum, ref1_naam, ref1_vak, ref1_opmerking, ref2_datum, ref2_naam, ref2_vak, ref2_opmerking FROM referenties WHERE user_id = %s",
+                "SELECT id, type, naam, datum, vak, opmerking FROM referenties WHERE user_id = %s ORDER BY id",
                 (user_id,),
             )
-            row = cur.fetchone()
-        return jsonify(_row_to_dict(row) if row else _empty())
+            rows = cur.fetchall()
+        return jsonify([
+            {'id': r[0], 'type': r[1], 'naam': r[2], 'datum': r[3], 'vak': r[4], 'opmerking': r[5]}
+            for r in rows
+        ])
     finally:
         put_conn(conn)
 
@@ -56,26 +53,17 @@ def get_referenties():
 @require_auth
 def save_referenties():
     user_id = session['user']['id']
-    data = request.get_json(force=True)
-    r1 = data.get('ref1', {})
-    r2 = data.get('ref2', {})
+    items = request.get_json(force=True)
     conn = get_conn()
     try:
         with conn.cursor() as cur:
             _ensure_table(cur)
-            cur.execute("""
-                INSERT INTO referenties (user_id, ref1_datum, ref1_naam, ref1_vak, ref1_opmerking, ref2_datum, ref2_naam, ref2_vak, ref2_opmerking)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (user_id) DO UPDATE SET
-                    ref1_datum=EXCLUDED.ref1_datum, ref1_naam=EXCLUDED.ref1_naam,
-                    ref1_vak=EXCLUDED.ref1_vak, ref1_opmerking=EXCLUDED.ref1_opmerking,
-                    ref2_datum=EXCLUDED.ref2_datum, ref2_naam=EXCLUDED.ref2_naam,
-                    ref2_vak=EXCLUDED.ref2_vak, ref2_opmerking=EXCLUDED.ref2_opmerking
-            """, (
-                user_id,
-                r1.get('datum', ''), r1.get('naam', ''), r1.get('vak', ''), r1.get('opmerking', ''),
-                r2.get('datum', ''), r2.get('naam', ''), r2.get('vak', ''), r2.get('opmerking', ''),
-            ))
+            cur.execute("DELETE FROM referenties WHERE user_id = %s", (user_id,))
+            for item in items:
+                cur.execute(
+                    "INSERT INTO referenties (user_id, type, naam, datum, vak, opmerking) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (user_id, item.get('type', ''), item.get('naam', ''), item.get('datum', ''), item.get('vak', ''), item.get('opmerking', '')),
+                )
             conn.commit()
         return jsonify({'ok': True})
     finally:

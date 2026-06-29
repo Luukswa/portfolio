@@ -112,17 +112,14 @@ def student_referenties(student_id):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT ref1_datum, ref1_naam, ref1_vak, ref1_opmerking, ref2_datum, ref2_naam, ref2_vak, ref2_opmerking FROM referenties WHERE user_id = %s",
+                "SELECT id, type, naam, datum, vak, opmerking FROM referenties WHERE user_id = %s ORDER BY id",
                 (student_id,),
             )
-            row = cur.fetchone()
-        if not row:
-            empty = {'datum': '', 'naam': '', 'vak': '', 'opmerking': ''}
-            return jsonify({'ref1': dict(empty), 'ref2': dict(empty)})
-        return jsonify({
-            'ref1': {'datum': row[0], 'naam': row[1], 'vak': row[2], 'opmerking': row[3]},
-            'ref2': {'datum': row[4], 'naam': row[5], 'vak': row[6], 'opmerking': row[7]},
-        })
+            rows = cur.fetchall()
+        return jsonify([
+            {'id': r[0], 'type': r[1], 'naam': r[2], 'datum': r[3], 'vak': r[4], 'opmerking': r[5]}
+            for r in rows
+        ])
     finally:
         put_conn(conn)
 

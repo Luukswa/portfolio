@@ -246,26 +246,19 @@ export default function StudentDetail() {
 
       {/* Referenties */}
       <Section title="Referenties">
-        {(() => {
-          const ref1empty = !refs.ref1.naam && !refs.ref1.datum && !refs.ref1.vak && !refs.ref1.opmerking
-          const ref2empty = !refs.ref2.naam && !refs.ref2.datum && !refs.ref2.vak && !refs.ref2.opmerking
-          if (ref1empty && ref2empty) return <Empty />
-          const RefBlock = ({ label, r }) => (
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)', marginBottom: '8px' }}>{label}</div>
-              {r.datum && <div style={{ marginBottom: '4px' }}><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Datum:</span><span style={{ fontSize: '0.85rem' }}>{r.datum}</span></div>}
-              {r.naam && <div style={{ marginBottom: '4px' }}><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Naam:</span><span style={{ fontSize: '0.85rem' }}>{r.naam}</span></div>}
-              {r.vak && <div style={{ marginBottom: '4px' }}><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Vak:</span><span style={{ fontSize: '0.85rem' }}>{r.vak}</span></div>}
-              {r.opmerking && <div><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Opmerking:</span><span style={{ fontSize: '0.85rem', color: 'var(--text-soft)' }}>{r.opmerking}</span></div>}
-            </div>
-          )
-          return (
-            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-              {!ref1empty && <RefBlock label="Vakleerkracht" r={refs.ref1} />}
-              {!ref2empty && <RefBlock label="Stageleerkracht" r={refs.ref2} />}
-            </div>
-          )
-        })()}
+        {refs.length === 0 ? <Empty /> : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+            {refs.map((r, i) => (
+              <div key={r.id || i}>
+                {r.type && <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', fontFamily: 'var(--title)', marginBottom: '8px' }}>{r.type}</div>}
+                {r.naam && <div style={{ marginBottom: '4px' }}><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Naam:</span><span style={{ fontSize: '0.85rem' }}>{r.naam}</span></div>}
+                {r.datum && <div style={{ marginBottom: '4px' }}><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Datum:</span><span style={{ fontSize: '0.85rem' }}>{r.datum}</span></div>}
+                {r.vak && <div style={{ marginBottom: '4px' }}><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Vak:</span><span style={{ fontSize: '0.85rem' }}>{r.vak}</span></div>}
+                {r.opmerking && <div><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Opmerking:</span><span style={{ fontSize: '0.85rem', color: 'var(--text-soft)' }}>{r.opmerking}</span></div>}
+              </div>
+            ))}
+          </div>
+        )}
       </Section>
 
       {/* Werkstukken */}
