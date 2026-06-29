@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 
+const EMPTY_PROFILE = { name: '', title: '', bio: '', skills: [], hobbies: [], subjects: [], avatar_url: '' }
+
+const WIZARD_STEPS = [
+  { label: 'Naam & foto' },
+  { label: 'Over jezelf' },
+  { label: 'Skills' },
+  { label: "Hobby's" },
+  { label: 'Vakken' },
+]
+
 export default function OverMij() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
@@ -8,19 +18,36 @@ export default function OverMij() {
   const [draft, setDraft] = useState(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [wizardActive, setWizardActive] = useState(false)
+  const [wizardStep, setWizardStep] = useState(1)
 
   const [newSkill, setNewSkill] = useState('')
   const [newHobbyIcon, setNewHobbyIcon] = useState('')
   const [newHobbyLabel, setNewHobbyLabel] = useState('')
   const [newSubject, setNewSubject] = useState('')
 
-  const EMPTY_PROFILE = { name: '', title: '', bio: '', skills: [], hobbies: [], subjects: [], avatar_url: '' }
+  const setupKey = `portfolio_setup_done_${user?.id || 'anon'}`
 
   useEffect(() => {
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : EMPTY_PROFILE)
-      .then(p => setProfile(p || EMPTY_PROFILE))
-      .catch(() => setProfile(EMPTY_PROFILE))
+      .then(p => {
+        const loaded = p || EMPTY_PROFILE
+        setProfile(loaded)
+        if (!loaded.name && !localStorage.getItem(setupKey)) {
+          setDraft({ ...EMPTY_PROFILE, ...loaded })
+          setWizardActive(true)
+          setWizardStep(1)
+        }
+      })
+      .catch(() => {
+        setProfile(EMPTY_PROFILE)
+        if (!localStorage.getItem(setupKey)) {
+          setDraft({ ...EMPTY_PROFILE })
+          setWizardActive(true)
+          setWizardStep(1)
+        }
+      })
   }, [])
 
   function startEdit() {
@@ -28,7 +55,6 @@ export default function OverMij() {
     setNewSkill(''); setNewHobbyIcon(''); setNewHobbyLabel(''); setNewSubject('')
     setEditing(true)
   }
-
   function cancel() { setDraft(null); setEditing(false) }
 
   async function save() {
@@ -39,8 +65,22 @@ export default function OverMij() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draft),
       })
-      if (res.ok) { setProfile(p => ({ ...p, ...draft })); setDraft(null); setEditing(false) }
+      if (res.ok) {
+        setProfile(prev => ({ ...prev, ...draft }))
+        setDraft(null)
+        setEditing(false)
+        if (wizardActive) {
+          localStorage.setItem(setupKey, '1')
+          setWizardActive(false)
+        }
+      }
     } finally { setSaving(false) }
+  }
+
+  function dismissWizard() {
+    localStorage.setItem(setupKey, '1')
+    setWizardActive(false)
+    setDraft(null)
   }
 
   async function handleAvatarUpload(e) {
@@ -53,7 +93,6 @@ export default function OverMij() {
       const res = await fetch('/api/profile/avatar', { method: 'POST', body: form })
       if (res.ok) {
         const { avatar_url } = await res.json()
-        // Add cache-bust so browser reloads the new image
         const busted = `${avatar_url}?t=${Date.now()}`
         setProfile(p => ({ ...p, avatar_url: busted }))
         setDraft(d => ({ ...d, avatar_url: busted }))
@@ -91,6 +130,185 @@ export default function OverMij() {
 
   if (!profile) return <div className="empty-state">Laden…</div>
 
+  // ── WIZARD ────────────────────────────────────────────────────────────────
+  if (wizardActive && draft) {
+    const totalSteps = WIZARD_STEPS.length
+    const isFirst = wizardStep === 1
+    const isLast = wizardStep === totalSteps
+    const avatarUrl = draft.avatar_url || ''
+
+    return (
+      <>
+        <div className="page-header">
+          <div>
+            <h2>Profiel instellen</h2>
+            <div className="subtitle">Stap {wizardStep} van {totalSteps} — {WIZARD_STEPS[wizardStep - 1].label}</div>
+          </div>
+          <button className="btn btn-ghost" onClick={dismissWizard} style={{ fontSize: '0.82rem' }}>Later invullen</button>
+        </div>
+
+        {/* Step indicator */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '24px' }}>
+          {WIZARD_STEPS.map((step, idx) => {
+            const n = idx + 1
+            const done = wizardStep > n
+            const active = wizardStep === n
+            return [
+              <div key={`step-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                <div style={{
+                  width: '30px', height: '30px', borderRadius: '50%',
+                  background: (done || active) ? 'var(--primary)' : 'var(--surface2)',
+                  border: `2px solid ${(done || active) ? 'var(--primary)' : 'var(--border)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: (done || active) ? '#fff' : 'var(--text-soft)',
+                  fontSize: '0.8rem', fontWeight: 700,
+                  transition: 'all 0.2s',
+                }}>
+                  {done ? '✓' : n}
+                </div>
+                <span style={{
+                  fontSize: '0.68rem', whiteSpace: 'nowrap',
+                  color: active ? 'var(--primary)' : done ? 'var(--text-soft)' : 'var(--text-dim)',
+                  fontWeight: active ? 600 : 400,
+                }}>{step.label}</span>
+              </div>,
+              idx < totalSteps - 1 && (
+                <div key={`line-${idx}`} style={{
+                  flex: 1, height: '2px', minWidth: '12px',
+                  background: done ? 'var(--primary)' : 'var(--border)',
+                  marginTop: '14px',
+                  transition: 'background 0.2s',
+                }} />
+              ),
+            ]
+          })}
+        </div>
+
+        {/* Step content */}
+        <div className="card" style={{ minHeight: '260px' }}>
+
+          {wizardStep === 1 && (
+            <div>
+              <div style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>Naam & profielfoto</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '20px' }}>Hoe wil je dat je portfolio wordt weergegeven?</div>
+              <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  <div style={{ position: 'relative', width: '100px', height: '100px' }}>
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt="Profielfoto" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', display: 'block', border: '2px solid var(--border)' }} />
+                    ) : (
+                      <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'var(--primary-light)', border: '2px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', color: 'var(--primary)' }}>👤</div>
+                    )}
+                    <label style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: uploading ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.28)', cursor: uploading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.5rem', transition: 'background 0.15s' }} title="Profielfoto uploaden">
+                      {uploading ? '…' : '📷'}
+                      <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: 'none' }} onChange={handleAvatarUpload} disabled={uploading} />
+                    </label>
+                  </div>
+                  {avatarUrl && <button onClick={handleAvatarDelete} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', fontSize: '0.75rem', padding: 0 }}>Verwijderen</button>}
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textAlign: 'center', maxWidth: '100px' }}>Klik op het icoon om een foto te uploaden</span>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-soft)', display: 'block', marginBottom: '4px' }}>Naam</label>
+                    <input className="edit-input" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="Jouw naam" autoFocus />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-soft)', display: 'block', marginBottom: '4px' }}>Titel / rol</label>
+                    <input className="edit-input" value={draft.title} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} placeholder="Bijv. Student · OSG Twente" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {wizardStep === 2 && (
+            <div>
+              <div style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>Over jezelf</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '20px' }}>Vertel iets over wie je bent, wat je interesseert, en wat je wil bereiken.</div>
+              <textarea className="edit-input" value={draft.bio} onChange={e => setDraft(d => ({ ...d, bio: e.target.value }))} placeholder="Schrijf hier iets over jezelf…" rows={7} autoFocus />
+            </div>
+          )}
+
+          {wizardStep === 3 && (
+            <div>
+              <div style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>Skills</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '20px' }}>Welke vaardigheden heb je? Bijv. Programmeren, Muziek, Tekenen…</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px', minHeight: '36px' }}>
+                {draft.skills.map((s, i) => (
+                  <span key={i} className="badge badge-primary" style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    {s}
+                    <button onClick={() => removeSkill(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0, lineHeight: 1, fontSize: '1rem', opacity: 0.7 }}>×</button>
+                  </span>
+                ))}
+                {draft.skills.length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', alignSelf: 'center' }}>Nog geen skills toegevoegd.</span>}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input className="edit-input" value={newSkill} onChange={e => setNewSkill(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSkill()} placeholder="Skill toevoegen…" autoFocus />
+                <button className="btn btn-primary btn-sm" onClick={addSkill}>+</button>
+              </div>
+            </div>
+          )}
+
+          {wizardStep === 4 && (
+            <div>
+              <div style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>Hobby's</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '20px' }}>Wat doe je graag in je vrije tijd?</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px', minHeight: '36px' }}>
+                {draft.hobbies.map((h, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '8px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: '0.88rem', color: 'var(--text)' }}>
+                    <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{h.icon}</span>
+                    <span style={{ flex: 1 }}>{h.label}</span>
+                    <button onClick={() => removeHobby(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, lineHeight: 1, fontSize: '1rem' }}>×</button>
+                  </div>
+                ))}
+                {draft.hobbies.length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', alignSelf: 'center' }}>Nog geen hobby's toegevoegd.</span>}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input className="edit-input" value={newHobbyIcon} onChange={e => setNewHobbyIcon(e.target.value)} placeholder="🎯" style={{ width: '60px', textAlign: 'center', flexShrink: 0 }} autoFocus />
+                <input className="edit-input" value={newHobbyLabel} onChange={e => setNewHobbyLabel(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHobby()} placeholder="Omschrijving…" />
+                <button className="btn btn-primary btn-sm" onClick={addHobby}>+</button>
+              </div>
+            </div>
+          )}
+
+          {wizardStep === 5 && (
+            <div>
+              <div style={{ fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>Leukste vakken</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginBottom: '20px' }}>Welke vakken vind je het leukst op school?</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px', minHeight: '36px' }}>
+                {draft.subjects.map((v, i) => (
+                  <span key={i} className="badge badge-blue" style={{ fontSize: '0.82rem', padding: '5px 14px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                    {v}
+                    <button onClick={() => removeSubject(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0, lineHeight: 1, fontSize: '1rem', opacity: 0.7 }}>×</button>
+                  </span>
+                ))}
+                {draft.subjects.length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', alignSelf: 'center' }}>Nog geen vakken toegevoegd.</span>}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input className="edit-input" value={newSubject} onChange={e => setNewSubject(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSubject()} placeholder="Vak toevoegen…" autoFocus />
+                <button className="btn btn-primary btn-sm" onClick={addSubject}>+</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+          <button className="btn btn-ghost" onClick={() => isLast ? save() : setWizardStep(s => s + 1)} disabled={saving} style={{ fontSize: '0.85rem' }}>
+            {isLast ? 'Overslaan & opslaan' : 'Stap overslaan'}
+          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {!isFirst && <button className="btn btn-ghost" onClick={() => setWizardStep(s => s - 1)} disabled={saving}>← Terug</button>}
+            <button className="btn btn-primary" onClick={() => isLast ? save() : setWizardStep(s => s + 1)} disabled={saving}>
+              {saving ? 'Opslaan…' : isLast ? '✓ Klaar!' : 'Volgende →'}
+            </button>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  // ── NORMAL VIEW ───────────────────────────────────────────────────────────
   const data = editing ? draft : profile
   const avatarUrl = data?.avatar_url || ''
 
