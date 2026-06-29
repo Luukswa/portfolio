@@ -1,6 +1,9 @@
+import os
 from flask import Blueprint, request, jsonify
 from middleware import require_admin
 from db import get_conn, put_conn
+
+_UPLOADS_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'uploads')
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -28,6 +31,35 @@ def list_users():
     finally:
         put_conn(conn)
 
+
+
+@admin_bp.route('/api/admin/users/<int:user_id>/profile/reset', methods=['POST'])
+@require_admin
+def reset_user_profile(user_id):
+    # Delete avatar file from disk
+    suffix = f'_{user_id}'
+    if os.path.exists(_UPLOADS_BASE):
+        for entry in os.scandir(_UPLOADS_BASE):
+            if entry.is_dir() and entry.name.endswith(suffix):
+                for f in os.listdir(entry.path):
+                    if f.startswith('avatar.'):
+                        os.remove(os.path.join(entry.path, f))
+                break
+
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE profile SET
+                    name = '', title = '', bio = '',
+                    skills = '[]'::jsonb, hobbies = '[]'::jsonb, subjects = '[]'::jsonb,
+                    avatar_url = ''
+                WHERE user_id = %s
+            """, (user_id,))
+            conn.commit()
+        return jsonify({'ok': True})
+    finally:
+        put_conn(conn)
 
 
 @admin_bp.route('/api/admin/users/<int:user_id>', methods=['PUT'])
