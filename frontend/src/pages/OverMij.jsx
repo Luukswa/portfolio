@@ -22,7 +22,6 @@ export default function OverMij() {
   const [wizardStep, setWizardStep] = useState(1)
 
   const [newSkill, setNewSkill] = useState('')
-  const [newHobbyIcon, setNewHobbyIcon] = useState('')
   const [newHobbyLabel, setNewHobbyLabel] = useState('')
   const [newSubject, setNewSubject] = useState('')
 
@@ -52,7 +51,7 @@ export default function OverMij() {
 
   function startEdit() {
     setDraft(JSON.parse(JSON.stringify(profile)))
-    setNewSkill(''); setNewHobbyIcon(''); setNewHobbyLabel(''); setNewSubject('')
+    setNewSkill(''); setNewHobbyLabel(''); setNewSubject('')
     setEditing(true)
   }
   function cancel() { setDraft(null); setEditing(false) }
@@ -117,8 +116,8 @@ export default function OverMij() {
 
   function addHobby() {
     const label = newHobbyLabel.trim(); if (!label) return
-    setDraft(d => ({ ...d, hobbies: [...d.hobbies, { icon: newHobbyIcon.trim() || '•', label }] }))
-    setNewHobbyIcon(''); setNewHobbyLabel('')
+    setDraft(d => ({ ...d, hobbies: [...d.hobbies, { icon: '', label }] }))
+    setNewHobbyLabel('')
   }
   function removeHobby(i) { setDraft(d => ({ ...d, hobbies: d.hobbies.filter((_, idx) => idx !== i) })) }
 
@@ -256,7 +255,7 @@ export default function OverMij() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px', minHeight: '36px' }}>
                 {draft.hobbies.map((h, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '8px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: '0.88rem', color: 'var(--text)' }}>
-                    <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{h.icon}</span>
+                    {h.icon && <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>{h.icon}</span>}
                     <span style={{ flex: 1 }}>{h.label}</span>
                     <button onClick={() => removeHobby(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, lineHeight: 1, fontSize: '1rem' }}>×</button>
                   </div>
@@ -264,8 +263,7 @@ export default function OverMij() {
                 {draft.hobbies.length === 0 && <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', alignSelf: 'center' }}>Nog geen hobby's toegevoegd.</span>}
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input className="edit-input" value={newHobbyIcon} onChange={e => setNewHobbyIcon(e.target.value)} placeholder="🎯" style={{ width: '60px', textAlign: 'center', flexShrink: 0 }} autoFocus />
-                <input className="edit-input" value={newHobbyLabel} onChange={e => setNewHobbyLabel(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHobby()} placeholder="Omschrijving…" />
+                <input className="edit-input" value={newHobbyLabel} onChange={e => setNewHobbyLabel(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHobby()} placeholder="Hobby toevoegen…" autoFocus />
                 <button className="btn btn-primary btn-sm" onClick={addHobby}>+</button>
               </div>
             </div>
@@ -477,7 +475,6 @@ export default function OverMij() {
           </div>
           {editing && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <input className="edit-input" value={newHobbyIcon} onChange={e => setNewHobbyIcon(e.target.value)} placeholder="🎯" style={{ width: '60px', textAlign: 'center', flexShrink: 0 }} />
               <input className="edit-input" value={newHobbyLabel} onChange={e => setNewHobbyLabel(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHobby()} placeholder="Hobby toevoegen…" />
               <button className="btn btn-primary btn-sm" onClick={addHobby}>+</button>
             </div>
