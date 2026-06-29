@@ -25,15 +25,13 @@ export default function OverMij() {
   const [newHobbyLabel, setNewHobbyLabel] = useState('')
   const [newSubject, setNewSubject] = useState('')
 
-  const setupKey = `portfolio_setup_done_${user?.id || 'anon'}`
-
   useEffect(() => {
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : EMPTY_PROFILE)
       .then(p => {
         const loaded = p || EMPTY_PROFILE
         setProfile(loaded)
-        if (!loaded.name && !localStorage.getItem(setupKey)) {
+        if (!loaded.name) {
           setDraft({ ...EMPTY_PROFILE, ...loaded })
           setWizardActive(true)
           setWizardStep(1)
@@ -41,11 +39,9 @@ export default function OverMij() {
       })
       .catch(() => {
         setProfile(EMPTY_PROFILE)
-        if (!localStorage.getItem(setupKey)) {
-          setDraft({ ...EMPTY_PROFILE })
-          setWizardActive(true)
-          setWizardStep(1)
-        }
+        setDraft({ ...EMPTY_PROFILE })
+        setWizardActive(true)
+        setWizardStep(1)
       })
   }, [])
 
@@ -69,7 +65,6 @@ export default function OverMij() {
         setDraft(null)
         setEditing(false)
         if (wizardActive) {
-          localStorage.setItem(setupKey, '1')
           setWizardActive(false)
         }
       }
@@ -77,7 +72,6 @@ export default function OverMij() {
   }
 
   function dismissWizard() {
-    localStorage.setItem(setupKey, '1')
     setWizardActive(false)
     setDraft(null)
   }
