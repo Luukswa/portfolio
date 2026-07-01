@@ -21,12 +21,23 @@ function FeedbackItem({ f, onDelete }) {
   )
 }
 
-/** Read-only feedback thread for students. Render as a sibling BELOW the entry's own card — never inside it. */
+/** Read-only feedback for students, styled as its own card — matches the rest of the app rather than
+ *  a chat-bubble pattern that appears nowhere else in the design. Render as a sibling BELOW the entry's own card. */
 export function FeedbackThread({ items }) {
   if (!items || !items.length) return null
   return (
-    <div style={{ marginTop: '2px', marginBottom: '6px', paddingLeft: '13px', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {items.map(f => <FeedbackItem key={f.id} f={f} />)}
+    <div className="card" style={{ marginTop: '8px', marginBottom: '6px', background: 'var(--primary-light)', borderColor: 'var(--primary-dim)' }}>
+      <div style={{ fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--primary)', marginBottom: '10px' }}>
+        💬 Feedback van docent
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {items.map((f, i) => (
+          <div key={f.id} style={{ paddingTop: i > 0 ? '12px' : 0, borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary-dark)', marginBottom: '3px' }}>{f.teacher_name}</div>
+            <div style={{ fontSize: '0.88rem', color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{f.body}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
