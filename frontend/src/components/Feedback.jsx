@@ -31,10 +31,14 @@ export function FeedbackThread({ items }) {
   )
 }
 
-/** Editable feedback thread + composer for teachers. Also render as a sibling BELOW the entry's own card. */
+/** Editable feedback thread + composer for teachers. Also render as a sibling BELOW the entry's own card.
+ *  Collapsed behind a small "+ Feedback geven" button by default — never an always-open input. */
 export function FeedbackComposer({ items, teacherId, isAdmin, onAdd, onDelete }) {
+  const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
+
+  function cancel() { setOpen(false); setText('') }
 
   async function submit() {
     if (!text.trim()) return
@@ -42,11 +46,20 @@ export function FeedbackComposer({ items, teacherId, isAdmin, onAdd, onDelete })
     try {
       await onAdd(text.trim())
       setText('')
+      setOpen(false)
     } finally { setSending(false) }
   }
 
+  if (!items.length && !open) {
+    return (
+      <div style={{ marginTop: '6px', marginBottom: '10px' }}>
+        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)} style={{ color: 'var(--text-dim)' }}>💬 Feedback geven</button>
+      </div>
+    )
+  }
+
   return (
-    <div style={{ marginTop: '2px', marginBottom: '10px', paddingLeft: '13px', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div style={{ marginTop: '6px', marginBottom: '10px', paddingLeft: '13px', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {items.map(f => (
         <FeedbackItem
           key={f.id}
@@ -54,17 +67,23 @@ export function FeedbackComposer({ items, teacherId, isAdmin, onAdd, onDelete })
           onDelete={(isAdmin || f.teacher_id === teacherId) ? () => onDelete(f.id) : null}
         />
       ))}
-      <div style={{ display: 'flex', gap: '6px' }}>
-        <input
-          className="edit-input"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && submit()}
-          placeholder="Feedback toevoegen…"
-          style={{ fontSize: '0.85rem' }}
-        />
-        <button className="btn btn-ghost btn-sm" onClick={submit} disabled={sending || !text.trim()}>{sending ? '…' : 'Versturen'}</button>
-      </div>
+      {open ? (
+        <div style={{ display: 'flex', gap: '6px', maxWidth: '440px' }}>
+          <input
+            className="edit-input"
+            autoFocus
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') cancel() }}
+            placeholder="Schrijf feedback…"
+            style={{ fontSize: '0.85rem' }}
+          />
+          <button className="btn btn-primary btn-sm" onClick={submit} disabled={sending || !text.trim()}>{sending ? '…' : 'Versturen'}</button>
+          <button className="btn btn-ghost btn-sm" onClick={cancel}>Annuleren</button>
+        </div>
+      ) : (
+        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)} style={{ alignSelf: 'flex-start', color: 'var(--text-dim)' }}>+ Reageren</button>
+      )}
     </div>
   )
 }
