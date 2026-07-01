@@ -1,10 +1,12 @@
 import decimal
+import io
 import json
 import os
 import re
 import shutil
+import zipfile
 from datetime import datetime
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, send_file
 from middleware import require_admin
 from db import get_conn, put_conn
 
@@ -129,6 +131,26 @@ def create_backup():
         'size': _dir_size(backup_dir),
         'has_uploads': has_uploads,
     }), 201
+
+
+@backup_bp.route('/api/admin/backups/<name>/download')
+@require_admin
+def download_backup(name):
+    if not _NAME_RE.match(name):
+        return jsonify({'error': 'Ongeldig bestand'}), 400
+    backup_dir = os.path.join(BACKUP_DIR, name)
+    if not os.path.isdir(backup_dir):
+        return jsonify({'error': 'Back-up niet gevonden'}), 404
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, _dirs, files in os.walk(backup_dir):
+            for f in files:
+                path = os.path.join(root, f)
+                zf.write(path, os.path.relpath(path, backup_dir))
+    buf.seek(0)
+
+    return send_file(buf, mimetype='application/zip', as_attachment=True, download_name=f'{name}.zip')
 
 
 @backup_bp.route('/api/admin/backups/<name>/restore', methods=['POST'])

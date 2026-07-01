@@ -483,6 +483,12 @@ export default function Beheer() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
+                  <a
+                    className="btn btn-ghost btn-sm"
+                    href={`/api/admin/backups/${encodeURIComponent(b.name)}/download`}
+                  >
+                    Downloaden
+                  </a>
                   <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => restoreBackup(b.name)}
