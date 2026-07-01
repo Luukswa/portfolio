@@ -150,6 +150,7 @@ export default function StudentDetail() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
+          <a className="btn btn-ghost" href={`/api/teacher/students/${id}/pdf`}>Exporteren als PDF</a>
           <button className="btn btn-ghost" onClick={() => navigate('/overzicht')}>← Terug</button>
         </div>
       </div>

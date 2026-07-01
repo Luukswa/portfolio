@@ -1,0 +1,110 @@
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 2cm 1.8cm; }
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #1a202c; }
+  h1 { font-size: 20pt; color: #0d4c92; margin: 0 0 2px 0; }
+  h2 { font-size: 13pt; color: #0d4c92; border-bottom: 1px solid #dde2ea; padding-bottom: 4px; margin: 18px 0 8px 0; }
+  .subtitle { font-size: 10pt; color: #4a5568; margin-bottom: 14px; }
+  .avatar { width: 70px; height: 70px; border-radius: 50%; }
+  .label { font-size: 8pt; text-transform: uppercase; color: #8a93a0; font-weight: bold; }
+  .value { font-size: 10pt; margin-bottom: 6px; }
+  table.data { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  table.data th, table.data td { border: 1px solid #dde2ea; padding: 5px 8px; text-align: left; font-size: 9pt; }
+  .tag { display: inline-block; background: #e8f0fb; color: #0d4c92; border-radius: 10px; padding: 2px 8px; margin: 0 4px 4px 0; font-size: 8pt; }
+  .empty { color: #8a93a0; font-style: italic; font-size: 9pt; }
+  .werkstuk { margin-bottom: 12px; }
+  .werkstuk img { width: 90px; height: 90px; margin: 4px 4px 0 0; }
+</style>
+</head>
+<body>
+
+  <table width="100%">
+    <tr>
+      {% if avatar_path %}
+      <td width="80"><img class="avatar" src="{{ avatar_path }}"></td>
+      {% endif %}
+      <td>
+        <h1>{{ profile.display_name }}</h1>
+        <div class="subtitle">Portfolio-export{% if profile.title %} &middot; {{ profile.title }}{% endif %}</div>
+      </td>
+    </tr>
+  </table>
+
+  <h2>Over mij</h2>
+  {% if profile.bio %}<div class="value">{{ profile.bio }}</div>{% endif %}
+  {% if profile.skills %}
+    <div class="label">Skills</div>
+    <div>{% for s in profile.skills %}<span class="tag">{{ s }}</span>{% endfor %}</div>
+  {% endif %}
+  {% if profile.hobbies %}
+    <div class="label">Hobby's</div>
+    <div>{% for h in profile.hobbies %}<span class="tag">{{ h.label }}</span>{% endfor %}</div>
+  {% endif %}
+  {% if profile.subjects %}
+    <div class="label">Favoriete vakken</div>
+    <div>{% for s in profile.subjects %}<span class="tag">{{ s }}</span>{% endfor %}</div>
+  {% endif %}
+  {% if not profile.bio and not profile.skills and not profile.hobbies and not profile.subjects %}
+    <div class="empty">Nog niet ingevuld.</div>
+  {% endif %}
+
+  <h2>Cijfers{% if avg %} &mdash; gemiddelde {{ avg }}{% endif %}</h2>
+  {% if grades %}
+  <table class="data">
+    <tr><th>Vak</th><th>Cijfer</th></tr>
+    {% for g in grades %}<tr><td>{{ g.vak }}</td><td>{{ g.cijfer }}</td></tr>{% endfor %}
+  </table>
+  {% else %}<div class="empty">Nog geen cijfers.</div>{% endif %}
+
+  <h2>Doelen</h2>
+  {% if goals %}
+    {% for g in goals %}
+      <div class="value"><strong>{{ g.doel }}</strong></div>
+      {% if g.wil_leren %}<div class="value">Wil leren: {{ g.wil_leren }}</div>{% endif %}
+      {% if g.nodig %}<div class="value">Nodig: {{ g.nodig }}</div>{% endif %}
+    {% endfor %}
+  {% else %}<div class="empty">Nog geen doelen.</div>{% endif %}
+
+  <h2>Referenties</h2>
+  {% if referenties %}
+    {% for r in referenties %}
+      <div class="value"><strong>{{ r.type or 'Referentie' }}</strong>{% if r.naam %} &mdash; {{ r.naam }}{% endif %}</div>
+      {% if r.vak %}<div class="value">Vak: {{ r.vak }}</div>{% endif %}
+      {% if r.datum %}<div class="value">Datum: {{ r.datum }}</div>{% endif %}
+      {% if r.opmerking %}<div class="value">{{ r.opmerking }}</div>{% endif %}
+    {% endfor %}
+  {% else %}<div class="empty">Nog geen referenties.</div>{% endif %}
+
+  <h2>Werkstukken</h2>
+  {% if werkstukken %}
+    {% for w in werkstukken %}
+      <div class="werkstuk">
+        <div class="value"><strong>{{ w.vak }}</strong>{% if w.datum %} &mdash; {{ w.datum }}{% endif %}</div>
+        {% if w.trots_omdat %}<div class="value">{{ w.trots_omdat }}</div>{% endif %}
+        {% for path in w.foto_paths %}<img src="{{ path }}">{% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}<div class="empty">Nog geen werkstukken.</div>{% endif %}
+
+  <h2>CV</h2>
+  {% if cv.naam or cv.adres or cv.telefoon or cv.email or cv.vaardigheden or cv.werkervaring %}
+    {% if cv.naam %}<div class="value"><span class="label">Naam</span><br/>{{ cv.naam }}</div>{% endif %}
+    {% if cv.adres %}<div class="value"><span class="label">Adres</span><br/>{{ cv.adres }}{% if cv.postcode %}, {{ cv.postcode }}{% endif %}</div>{% endif %}
+    {% if cv.telefoon %}<div class="value"><span class="label">Telefoon</span><br/>{{ cv.telefoon }}</div>{% endif %}
+    {% if cv.email %}<div class="value"><span class="label">E-mail</span><br/>{{ cv.email }}</div>{% endif %}
+    {% if cv.vaardigheden %}
+      <div class="label">Vaardigheden</div>
+      <div>{% for v in cv.vaardigheden %}<span class="tag">{{ v }}</span>{% endfor %}</div>
+    {% endif %}
+    {% if cv.werkervaring %}
+      <div class="label">Werkervaring</div>
+      {% for w in cv.werkervaring %}
+        <div class="value">{{ w.bedrijf }}{% if w.functie %} &middot; {{ w.functie }}{% endif %}{% if w.periode %}<br/><span class="empty">{{ w.periode }}</span>{% endif %}</div>
+      {% endfor %}
+    {% endif %}
+  {% else %}<div class="empty">Nog niet ingevuld.</div>{% endif %}
+
+</body>
+</html>

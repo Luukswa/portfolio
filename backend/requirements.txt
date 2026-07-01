@@ -5,3 +5,4 @@ requests==2.32.3
 python-dotenv==1.0.1
 waitress==3.0.1
 msal==1.31.1
+xhtml2pdf==0.2.17
