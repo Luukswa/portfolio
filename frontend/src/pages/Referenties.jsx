@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { FeedbackThread } from '../components/Feedback'
 
 const EMPTY = { type: '', naam: '', datum: '', vak: '', opmerking: '' }
 
@@ -132,11 +133,13 @@ function AddForm({ onAdded, onCancel }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Referenties() {
-  const [refs, setRefs]     = useState(null)
-  const [adding, setAdding] = useState(false)
+  const [refs, setRefs]         = useState(null)
+  const [feedback, setFeedback] = useState([])
+  const [adding, setAdding]     = useState(false)
 
   useEffect(() => {
     fetch('/api/referenties').then(r => r.json()).then(setRefs).catch(() => setRefs([]))
+    fetch('/api/feedback').then(r => r.json()).then(setFeedback).catch(() => {})
   }, [])
 
   async function remove(id) {
@@ -159,12 +162,14 @@ export default function Referenties() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {adding && <AddForm onAdded={item => { setRefs(rs => [...rs, item]); setAdding(false) }} onCancel={() => setAdding(false)} />}
         {refs.map(ref => (
-          <ReferentieCard
-            key={ref.id}
-            item={ref}
-            onSaved={updated => setRefs(rs => rs.map(x => x.id === updated.id ? updated : x))}
-            onDeleted={remove}
-          />
+          <div key={ref.id}>
+            <ReferentieCard
+              item={ref}
+              onSaved={updated => setRefs(rs => rs.map(x => x.id === updated.id ? updated : x))}
+              onDeleted={remove}
+            />
+            <FeedbackThread items={feedback.filter(f => f.target_type === 'referentie' && f.target_id === ref.id)} />
+          </div>
         ))}
       </div>
 

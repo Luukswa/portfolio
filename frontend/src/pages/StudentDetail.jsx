@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate, useParams } from 'react-router-dom'
+import { FeedbackComposer } from '../components/Feedback'
 
 function Lightbox({ urls, initialIndex = 0, title, onClose }) {
   const [idx, setIdx] = useState(initialIndex)
@@ -83,58 +84,11 @@ function cijferColor(c) {
   return 'badge-red'
 }
 
-function FeedbackBox({ items, teacherId, isAdmin, onAdd, onDelete }) {
-  const [text, setText] = useState('')
-  const [sending, setSending] = useState(false)
-
-  async function submit() {
-    if (!text.trim()) return
-    setSending(true)
-    try {
-      await onAdd(text.trim())
-      setText('')
-    } finally { setSending(false) }
-  }
-
-  return (
-    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {items.map(f => (
-        <div key={f.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, fontFamily: 'var(--title)', flexShrink: 0 }}>
-            {f.teacher_name?.[0]?.toUpperCase() ?? '?'}
-          </div>
-          <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', borderTopLeftRadius: '3px', padding: '7px 11px', flex: 1, display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' }}>
-            <div>
-              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-soft)', marginBottom: '2px' }}>
-                {f.teacher_name} <span style={{ fontWeight: 400, color: 'var(--text-dim)' }}>· docent</span>
-              </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
-            </div>
-            {(isAdmin || f.teacher_id === teacherId) && (
-              <button onClick={() => onDelete(f.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, lineHeight: 1, fontSize: '1rem', flexShrink: 0 }}>×</button>
-            )}
-          </div>
-        </div>
-      ))}
-      <div style={{ display: 'flex', gap: '6px' }}>
-        <input
-          className="edit-input"
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && submit()}
-          placeholder="Feedback toevoegen…"
-          style={{ fontSize: '0.85rem' }}
-        />
-        <button className="btn btn-ghost btn-sm" onClick={submit} disabled={sending || !text.trim()}>{sending ? '…' : 'Versturen'}</button>
-      </div>
-    </div>
-  )
-}
-
 export default function StudentDetail() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { id } = useParams()
+  const studentId = Number(id)
 
   const [studentName, setStudentName] = useState('')
   const [profile, setProfile]   = useState(null)
@@ -190,6 +144,10 @@ export default function StudentDetail() {
   async function deleteFeedback(feedbackId) {
     await fetch(`/api/teacher/feedback/${feedbackId}`, { method: 'DELETE' })
     setFeedback(fb => fb.filter(f => f.id !== feedbackId))
+  }
+
+  function feedbackFor(targetType, targetId) {
+    return feedback.filter(f => f.target_type === targetType && f.target_id === targetId)
   }
 
   const loaded = profile && grades && goals && cv && refs && werkstukken
@@ -254,6 +212,13 @@ export default function StudentDetail() {
         )}
         {!profile.bio && !profile.skills?.length && !profile.hobbies?.length && !profile.subjects?.length && <Empty />}
       </Section>
+      <FeedbackComposer
+        items={feedbackFor('profiel', studentId)}
+        teacherId={user?.id}
+        isAdmin={user?.is_admin}
+        onAdd={body => addFeedback('profiel', studentId, body)}
+        onDelete={deleteFeedback}
+      />
 
       {/* Cijfers */}
       <Section title={`Mijn cijfers${avg ? ` — gemiddelde ${avg}` : ''}`}>
@@ -273,6 +238,13 @@ export default function StudentDetail() {
           </div>
         )}
       </Section>
+      <FeedbackComposer
+        items={feedbackFor('cijfers', studentId)}
+        teacherId={user?.id}
+        isAdmin={user?.is_admin}
+        onAdd={body => addFeedback('cijfers', studentId, body)}
+        onDelete={deleteFeedback}
+      />
 
       {/* Doelen */}
       <Section title="Doelen">
@@ -291,8 +263,8 @@ export default function StudentDetail() {
                 <span style={{ fontSize: '0.83rem', color: 'var(--text-soft)' }}>{g.nodig}</span>
               </div>
             )}
-            <FeedbackBox
-              items={feedback.filter(f => f.target_type === 'goal' && f.target_id === g.id)}
+            <FeedbackComposer
+              items={feedbackFor('goal', g.id)}
               teacherId={user?.id}
               isAdmin={user?.is_admin}
               onAdd={body => addFeedback('goal', g.id, body)}
@@ -313,6 +285,15 @@ export default function StudentDetail() {
                 {r.datum && <div style={{ marginBottom: '4px' }}><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Datum:</span><span style={{ fontSize: '0.85rem' }}>{r.datum}</span></div>}
                 {r.vak && <div style={{ marginBottom: '4px' }}><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Vak:</span><span style={{ fontSize: '0.85rem' }}>{r.vak}</span></div>}
                 {r.opmerking && <div><span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', marginRight: '6px' }}>Opmerking:</span><span style={{ fontSize: '0.85rem', color: 'var(--text-soft)' }}>{r.opmerking}</span></div>}
+                {r.id != null && (
+                  <FeedbackComposer
+                    items={feedbackFor('referentie', r.id)}
+                    teacherId={user?.id}
+                    isAdmin={user?.is_admin}
+                    onAdd={body => addFeedback('referentie', r.id, body)}
+                    onDelete={deleteFeedback}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -328,28 +309,30 @@ export default function StudentDetail() {
               const urls  = fotos.map(f => f.url)
               const open  = i => setLightbox({ urls, initialIndex: i, title: w.vak || '' })
               return (
-                <div key={w.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' }}>
-                  {fotos.length > 0 ? (
-                    <div style={{ display: 'flex', gap: '3px', overflowX: 'auto', padding: '6px', background: 'var(--surface2)' }}>
-                      {fotos.map((f, i) => (
-                        <img key={f.id} src={`${f.url}?t=1`} alt="" onClick={() => open(i)} style={{ width: fotos.length === 1 ? '100%' : '72px', height: fotos.length === 1 ? 'auto' : '72px', aspectRatio: fotos.length === 1 ? '4/3' : undefined, objectFit: 'cover', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, display: 'block' }} />
-                      ))}
+                <div key={w.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' }}>
+                    {fotos.length > 0 ? (
+                      <div style={{ display: 'flex', gap: '3px', overflowX: 'auto', padding: '6px', background: 'var(--surface2)' }}>
+                        {fotos.map((f, i) => (
+                          <img key={f.id} src={`${f.url}?t=1`} alt="" onClick={() => open(i)} style={{ width: fotos.length === 1 ? '100%' : '72px', height: fotos.length === 1 ? 'auto' : '72px', aspectRatio: fotos.length === 1 ? '4/3' : undefined, objectFit: 'cover', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, display: 'block' }} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.78rem' }}>Geen foto</div>
+                    )}
+                    <div style={{ padding: '10px 12px', fontSize: '0.82rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
+                      {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
+                      {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
                     </div>
-                  ) : (
-                    <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', fontSize: '0.78rem' }}>Geen foto</div>
-                  )}
-                  <div style={{ padding: '10px 12px', fontSize: '0.82rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
-                    {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
-                    {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
-                    <FeedbackBox
-                      items={feedback.filter(f => f.target_type === 'werkstuk' && f.target_id === w.id)}
-                      teacherId={user?.id}
-                      isAdmin={user?.is_admin}
-                      onAdd={body => addFeedback('werkstuk', w.id, body)}
-                      onDelete={deleteFeedback}
-                    />
                   </div>
+                  <FeedbackComposer
+                    items={feedbackFor('werkstuk', w.id)}
+                    teacherId={user?.id}
+                    isAdmin={user?.is_admin}
+                    onAdd={body => addFeedback('werkstuk', w.id, body)}
+                    onDelete={deleteFeedback}
+                  />
                 </div>
               )
             })}
@@ -392,6 +375,13 @@ export default function StudentDetail() {
           </div>
         )}
       </Section>
+      <FeedbackComposer
+        items={feedbackFor('cv', studentId)}
+        teacherId={user?.id}
+        isAdmin={user?.is_admin}
+        onAdd={body => addFeedback('cv', studentId, body)}
+        onDelete={deleteFeedback}
+      />
     </>
   )
 }

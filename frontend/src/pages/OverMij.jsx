@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { FeedbackThread } from '../components/Feedback'
 
 const EMPTY_PROFILE = { name: '', title: '', bio: '', skills: [], hobbies: [], subjects: [], avatar_url: '' }
 
@@ -14,6 +15,7 @@ const WIZARD_STEPS = [
 export default function OverMij() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
+  const [feedback, setFeedback] = useState([])
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -44,6 +46,10 @@ export default function OverMij() {
         setWizardActive(true)
         setWizardStep(1)
       })
+    fetch('/api/feedback')
+      .then(r => r.json())
+      .then(setFeedback)
+      .catch(() => {})
   }, [])
 
   function startEdit() {
@@ -515,6 +521,10 @@ export default function OverMij() {
           )}
         </div>
 
+      </div>
+
+      <div style={{ marginTop: '16px' }}>
+        <FeedbackThread items={feedback.filter(f => f.target_type === 'profiel')} />
       </div>
     </>
   )

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { FeedbackThread } from '../components/Feedback'
 
 function cijferBadge(c) {
   if (c >= 7)   return 'badge badge-green'
@@ -13,6 +14,7 @@ function fmt(iso) {
 
 export default function Cijfers() {
   const [grades, setGrades] = useState(null)
+  const [feedback, setFeedback] = useState([])
   const [vak, setVak] = useState('')
   const [cijfer, setCijfer] = useState('')
   const [error, setError] = useState('')
@@ -22,6 +24,10 @@ export default function Cijfers() {
     fetch('/api/grades')
       .then(r => r.json())
       .then(setGrades)
+      .catch(() => {})
+    fetch('/api/feedback')
+      .then(r => r.json())
+      .then(setFeedback)
       .catch(() => {})
   }, [])
 
@@ -157,6 +163,10 @@ export default function Cijfers() {
           </table>
         </div>
       )}
+
+      <div style={{ marginTop: '16px' }}>
+        <FeedbackThread items={feedback.filter(f => f.target_type === 'cijfers')} />
+      </div>
     </>
   )
 }

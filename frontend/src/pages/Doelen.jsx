@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { FeedbackThread } from '../components/Feedback'
 
 const EMPTY = { doel: '', wil_leren: '', nodig: '' }
 
@@ -12,28 +13,7 @@ function Section({ label, text, bg, color }) {
   )
 }
 
-function FeedbackList({ items }) {
-  if (!items.length) return null
-  return (
-    <div style={{ marginTop: '2px', paddingLeft: '13px', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {items.map(f => (
-        <div key={f.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, fontFamily: 'var(--title)', flexShrink: 0 }}>
-            {f.teacher_name?.[0]?.toUpperCase() ?? '?'}
-          </div>
-          <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', borderTopLeftRadius: '3px', padding: '7px 11px', flex: 1 }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-soft)', marginBottom: '2px' }}>
-              {f.teacher_name} <span style={{ fontWeight: 400, color: 'var(--text-dim)' }}>· docent</span>
-            </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function GoalCard({ goal, feedback, onDelete, onSave }) {
+function GoalCard({ goal, onDelete, onSave }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ doel: goal.doel, wil_leren: goal.wil_leren, nodig: goal.nodig })
   const [saving, setSaving] = useState(false)
@@ -85,7 +65,6 @@ function GoalCard({ goal, feedback, onDelete, onSave }) {
           </div>
           <Section label="Wat ik wil leren"       text={goal.wil_leren} bg="var(--primary-dim)"  color="var(--primary-dark)" />
           <Section label="Wat ik daarvoor nodig heb" text={goal.nodig}  bg="var(--green-dim)"    color="var(--green)" />
-          <FeedbackList items={feedback} />
         </>
       )}
     </div>
@@ -195,13 +174,10 @@ export default function Doelen() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {goals.map(g => (
-            <GoalCard
-              key={g.id}
-              goal={g}
-              feedback={feedback.filter(f => f.target_type === 'goal' && f.target_id === g.id)}
-              onDelete={remove}
-              onSave={save}
-            />
+            <div key={g.id}>
+              <GoalCard goal={g} onDelete={remove} onSave={save} />
+              <FeedbackThread items={feedback.filter(f => f.target_type === 'goal' && f.target_id === g.id)} />
+            </div>
           ))}
         </div>
       )}

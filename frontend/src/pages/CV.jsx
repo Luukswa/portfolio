@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { FeedbackThread } from '../components/Feedback'
 
 const EMPTY = { naam: '', adres: '', postcode: '', telefoon: '', email: '', hobbies: [], vaardigheden: [], werkervaring: [] }
 const EMPTY_WERK = { bedrijf: '', functie: '', periode: '', beschrijving: '' }
@@ -83,6 +84,7 @@ function Field({ label, value }) {
 export default function CV() {
   const { user } = useAuth()
   const [cv, setCv]           = useState(null)
+  const [feedback, setFeedback] = useState([])
   const [editing, setEditing] = useState(false)
   const [form, setForm]       = useState(EMPTY)
   const [saving, setSaving]   = useState(false)
@@ -91,6 +93,7 @@ export default function CV() {
 
   useEffect(() => {
     fetch('/api/cv').then(r => r.json()).then(d => { setCv(d); setForm(d) }).catch(() => {})
+    fetch('/api/feedback').then(r => r.json()).then(setFeedback).catch(() => {})
   }, [])
 
   function field(f) { return e => setForm(p => ({ ...p, [f]: e.target.value })) }
@@ -229,6 +232,10 @@ export default function CV() {
                 </div>
               ))
               : <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Nog niet ingevuld.</div>}
+          </div>
+
+          <div style={{ marginTop: '16px' }}>
+            <FeedbackThread items={feedback.filter(f => f.target_type === 'cv')} />
           </div>
         </>
       )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { FeedbackThread } from '../components/Feedback'
 
 const EMPTY = { vak: '', gemaakt_bij: '', datum: '', trots_omdat: '' }
 
@@ -91,32 +92,9 @@ function FotoGrid({ fotos, editing, onAdd, onDelete }) {
   )
 }
 
-// ── Feedback ──────────────────────────────────────────────────────────────────
-
-function FeedbackList({ items }) {
-  if (!items.length) return null
-  return (
-    <div style={{ marginTop: '2px', paddingLeft: '13px', borderLeft: '2px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {items.map(f => (
-        <div key={f.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, fontFamily: 'var(--title)', flexShrink: 0 }}>
-            {f.teacher_name?.[0]?.toUpperCase() ?? '?'}
-          </div>
-          <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', borderTopLeftRadius: '3px', padding: '7px 11px', flex: 1 }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-soft)', marginBottom: '2px' }}>
-              {f.teacher_name} <span style={{ fontWeight: 400, color: 'var(--text-dim)' }}>· docent</span>
-            </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // ── Werkstuk card ─────────────────────────────────────────────────────────────
 
-function WerkstukCard({ item, feedback, onSaved, onDeleted }) {
+function WerkstukCard({ item, onSaved, onDeleted }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm]       = useState({ vak: item.vak, gemaakt_bij: item.gemaakt_bij, datum: item.datum, trots_omdat: item.trots_omdat })
   const [fotos, setFotos]     = useState(item.fotos || [])
@@ -198,7 +176,6 @@ function WerkstukCard({ item, feedback, onSaved, onDeleted }) {
             {!item.trots_omdat && !item.gemaakt_bij && fotos.length === 0 && (
               <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>Nog niet ingevuld.</div>
             )}
-            <FeedbackList items={feedback} />
             <div style={{ display: 'flex', gap: '6px' }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>Bewerken</button>
               <button className="btn btn-danger btn-sm" onClick={() => onDeleted(item.id)}>Verwijderen</button>
@@ -353,13 +330,14 @@ export default function Werkstukken() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {adding && <AddForm onAdded={item => { setItems(it => [item, ...it]); setAdding(false) }} onCancel={() => setAdding(false)} />}
         {items.map(item => (
-          <WerkstukCard
-            key={item.id}
-            item={item}
-            feedback={feedback.filter(f => f.target_type === 'werkstuk' && f.target_id === item.id)}
-            onSaved={updated => setItems(it => it.map(x => x.id === updated.id ? updated : x))}
-            onDeleted={remove}
-          />
+          <div key={item.id}>
+            <WerkstukCard
+              item={item}
+              onSaved={updated => setItems(it => it.map(x => x.id === updated.id ? updated : x))}
+              onDeleted={remove}
+            />
+            <FeedbackThread items={feedback.filter(f => f.target_type === 'werkstuk' && f.target_id === item.id)} />
+          </div>
         ))}
       </div>
 

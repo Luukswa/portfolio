@@ -4,7 +4,17 @@ from db import get_conn, put_conn
 
 feedback_bp = Blueprint('feedback', __name__)
 
-VALID_TARGETS = {'goal': 'goals', 'werkstuk': 'werkstukken'}
+# target_type -> table to validate target_id against.
+# 'singleton' targets (profiel/cijfers/cv) are section-level, not tied to one row,
+# so target_id is just the student's own id.
+TARGETS = {
+    'goal':       {'table': 'goals',       'singleton': False},
+    'werkstuk':   {'table': 'werkstukken', 'singleton': False},
+    'referentie': {'table': 'referenties', 'singleton': False},
+    'profiel':    {'table': 'profile',     'singleton': True},
+    'cijfers':    {'table': 'grades',      'singleton': True},
+    'cv':         {'table': 'cv_data',     'singleton': True},
+}
 
 
 def _ensure_table(cur):
@@ -74,8 +84,8 @@ def add_feedback(student_id):
     target_id = data.get('target_id')
     body = (data.get('body') or '').strip()
 
-    table = VALID_TARGETS.get(target_type)
-    if not table or not target_id or not body:
+    meta = TARGETS.get(target_type)
+    if not meta or target_id is None or not body:
         return jsonify({'error': 'Ongeldige invoer'}), 400
 
     teacher = session['user']
@@ -83,8 +93,15 @@ def add_feedback(student_id):
     try:
         with conn.cursor() as cur:
             _ensure_table(cur)
-            cur.execute(f"SELECT 1 FROM {table} WHERE id = %s AND user_id = %s", (target_id, student_id))
-            if not cur.fetchone():
+            if meta['singleton']:
+                valid = int(target_id) == student_id
+            else:
+                cur.execute(
+                    f"SELECT 1 FROM {meta['table']} WHERE id = %s AND user_id = %s",
+                    (target_id, student_id),
+                )
+                valid = cur.fetchone() is not None
+            if not valid:
                 return jsonify({'error': 'Niet gevonden'}), 404
 
             cur.execute(
