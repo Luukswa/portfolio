@@ -90,6 +90,7 @@ export default function Beheer() {
   const [deletingName, setDeletingName] = useState(null)
   const [backupMsg, setBackupMsg] = useState(null)
   const [editingUserId, setEditingUserId] = useState(null)
+  const [roleFilter, setRoleFilter] = useState('alle')
   const logoRef = useRef()
 
   useEffect(() => {
@@ -209,13 +210,25 @@ export default function Beheer() {
   const docenten   = users.filter(u => u.is_teacher && !u.is_admin)
   const leerlingen = users.filter(u => !u.is_teacher && !u.is_admin)
 
+  const ROLE_FILTERS = [
+    { key: 'alle',     label: 'Alle',        count: users.length },
+    { key: 'admin',    label: 'Beheerders',  count: beheerders.length },
+    { key: 'teacher',  label: 'Docenten',    count: docenten.length },
+    { key: 'student',  label: 'Leerlingen',  count: leerlingen.length },
+  ]
+
   function renderUsersTable() {
-    const groups = [
-      { title: 'Beheerders', group: beheerders },
-      { title: 'Docenten', group: docenten },
-      { title: 'Leerlingen', group: leerlingen },
-    ].filter(g => g.group.length > 0)
-    if (!groups.length) return null
+    const allGroups = [
+      { key: 'admin',   title: 'Beheerders', group: beheerders },
+      { key: 'teacher', title: 'Docenten',   group: docenten },
+      { key: 'student', title: 'Leerlingen', group: leerlingen },
+    ]
+    const groups = allGroups
+      .filter(g => roleFilter === 'alle' || g.key === roleFilter)
+      .filter(g => g.group.length > 0)
+
+    if (!groups.length) return <div className="empty-state">Geen gebruikers met deze rol.</div>
+
     return (
       <div className="table-wrap">
         <table>
@@ -304,7 +317,22 @@ export default function Beheer() {
       </div>
 
       {/* ── Gebruikers ── */}
-      {tab === 'gebruikers' && renderUsersTable()}
+      {tab === 'gebruikers' && (
+        <>
+          <div className="toolbar" style={{ marginBottom: '16px' }}>
+            {ROLE_FILTERS.map(f => (
+              <button
+                key={f.key}
+                className={`btn btn-sm ${roleFilter === f.key ? 'btn-primary' : 'btn-ghost'}`}
+                onClick={() => setRoleFilter(f.key)}
+              >
+                {f.label} <span style={{ opacity: 0.75 }}>· {f.count}</span>
+              </button>
+            ))}
+          </div>
+          {renderUsersTable()}
+        </>
+      )}
 
       {/* ── Huisstijl ── */}
       {tab === 'huisstijl' && (
