@@ -13,14 +13,52 @@ def list_students():
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, display_name, email, last_login FROM users ORDER BY display_name"
+                "SELECT id, display_name, email, last_login FROM users "
+                "WHERE is_teacher = false AND is_admin = false ORDER BY display_name"
             )
             rows = cur.fetchall()
+            ids = [r[0] for r in rows]
+            if not ids:
+                return jsonify([])
+
+            cur.execute("SELECT user_id, name FROM profile WHERE user_id = ANY(%s)", (ids,))
+            profiel = {r[0]: bool((r[1] or '').strip()) for r in cur.fetchall()}
+
+            cur.execute("SELECT user_id, COUNT(*) FROM grades WHERE user_id = ANY(%s) GROUP BY user_id", (ids,))
+            cijfers = {r[0]: r[1] for r in cur.fetchall()}
+
+            cur.execute("SELECT user_id, COUNT(*) FROM goals WHERE user_id = ANY(%s) GROUP BY user_id", (ids,))
+            doelen = {r[0]: r[1] for r in cur.fetchall()}
+
+            cur.execute(
+                "SELECT user_id, naam, adres, telefoon, email, vaardigheden, werkervaring "
+                "FROM cv_data WHERE user_id = ANY(%s)",
+                (ids,),
+            )
+            cv = {
+                r[0]: bool((r[1] or '').strip() or (r[2] or '').strip() or (r[3] or '').strip() or (r[4] or '').strip() or r[5] or r[6])
+                for r in cur.fetchall()
+            }
+
+            cur.execute("SELECT user_id, COUNT(*) FROM referenties WHERE user_id = ANY(%s) GROUP BY user_id", (ids,))
+            referenties = {r[0]: r[1] for r in cur.fetchall()}
+
+            cur.execute("SELECT user_id, COUNT(*) FROM werkstukken WHERE user_id = ANY(%s) GROUP BY user_id", (ids,))
+            werkstukken = {r[0]: r[1] for r in cur.fetchall()}
+
         return jsonify([{
             'id':           r[0],
             'display_name': r[1],
             'email':        r[2],
             'last_login':   r[3].isoformat() if r[3] else None,
+            'completion': {
+                'profiel':     profiel.get(r[0], False),
+                'cijfers':     cijfers.get(r[0], 0),
+                'doelen':      doelen.get(r[0], 0),
+                'cv':          cv.get(r[0], False),
+                'referenties': referenties.get(r[0], 0),
+                'werkstukken': werkstukken.get(r[0], 0),
+            },
         } for r in rows])
     finally:
         put_conn(conn)
