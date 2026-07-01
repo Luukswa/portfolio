@@ -54,6 +54,7 @@ export default function Layout() {
           <span className="header-name">{user.display_name}</span>
           {user.is_admin && <span className="role-chip">Beheerder</span>}
           {user.is_teacher && !user.is_admin && <span className="role-chip">Docent</span>}
+          <button className="btn-signout" onClick={() => navigate('/hulp')} title="Hulp">❓</button>
           {user.is_admin && (
             <button className="btn-signout" onClick={() => navigate('/beheer')} title="Gebruikersbeheer">⚙</button>
           )}
@@ -120,13 +121,6 @@ export default function Layout() {
           >
             <span className="ni">🖼️</span>
             <span className="ni-label">Werkstukken</span>
-          </div>
-          <div
-            className={`nav-item${location.pathname === '/hulp' ? ' active' : ''}`}
-            onClick={() => navigate('/hulp')}
-          >
-            <span className="ni">❓</span>
-            <span className="ni-label">Hulp</span>
           </div>
           {(user.is_teacher || user.is_admin) && (
             <>
