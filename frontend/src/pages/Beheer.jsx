@@ -3,6 +3,66 @@ import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useBranding } from '../context/BrandingContext'
 
+function EditUserModal({ user, onClose, onToggle, onReset }) {
+  const [resetting, setResetting] = useState(false)
+  const [resetDone, setResetDone] = useState(false)
+  const isStudent = !user.is_teacher && !user.is_admin
+
+  async function handleReset() {
+    if (!window.confirm(`Profiel van ${user.display_name} resetten? Alle 'Over mij' gegevens worden gewist.`)) return
+    setResetting(true)
+    try {
+      await onReset(user.id)
+      setResetDone(true)
+    } finally { setResetting(false) }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-header">
+          <span className="modal-title">{user.display_name}</span>
+          <button className="btn btn-icon" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-soft)', marginTop: '-8px' }}>{user.email}</div>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <span className="toggle-switch">
+              <input type="checkbox" checked={user.is_admin} onChange={() => onToggle(user.id, 'is_admin', user.is_admin)} />
+              <span className="toggle-slider" />
+            </span>
+            <span className="toggle-label">Beheerder</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+            <span className="toggle-switch">
+              <input type="checkbox" checked={user.is_teacher} onChange={() => onToggle(user.id, 'is_teacher', user.is_teacher)} />
+              <span className="toggle-slider" />
+            </span>
+            <span className="toggle-label">Docent</span>
+          </label>
+
+          {isStudent && (
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+              <div style={{ fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', marginBottom: '8px' }}>
+                Gevarenzone
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={handleReset} disabled={resetting} style={{ color: 'var(--red)' }}>
+                {resetting ? 'Resetten…' : "Profiel 'Over mij' resetten"}
+              </button>
+              {resetDone && <span style={{ marginLeft: '10px', fontSize: '0.8rem', color: 'var(--text-dim)' }}>Gereset.</span>}
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Sluiten</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const THEME_META = {
   standaard: {
     label: 'Standaard',
@@ -29,6 +89,7 @@ export default function Beheer() {
   const [restoringName, setRestoringName] = useState(null)
   const [deletingName, setDeletingName] = useState(null)
   const [backupMsg, setBackupMsg] = useState(null)
+  const [editingUserId, setEditingUserId] = useState(null)
   const logoRef = useRef()
 
   useEffect(() => {
@@ -49,6 +110,10 @@ export default function Beheer() {
       body: JSON.stringify({ [field]: !current }),
     })
     setUsers(u => u.map(x => x.id === id ? { ...x, [field]: !current } : x))
+  }
+
+  async function resetProfile(id) {
+    await fetch(`/api/admin/users/${id}/profile/reset`, { method: 'POST' })
   }
 
   async function saveTheme(name) {
@@ -139,6 +204,7 @@ export default function Beheer() {
 
   if (!users) return <div className="empty-state">Laden…</div>
 
+  const editingUser = editingUserId ? users.find(u => u.id === editingUserId) : null
   const beheerders = users.filter(u => u.is_admin)
   const docenten   = users.filter(u => u.is_teacher && !u.is_admin)
   const leerlingen = users.filter(u => !u.is_teacher && !u.is_admin)
@@ -158,8 +224,8 @@ export default function Beheer() {
               <th>Gebruiker</th>
               <th>E-mail</th>
               <th>Laatste login</th>
-              <th>Beheerder</th>
-              <th>Docent</th>
+              <th>Rol</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -191,24 +257,14 @@ export default function Beheer() {
                     <td style={{ color: 'var(--text-soft)' }}>{u.email}</td>
                     <td style={{ color: 'var(--text-soft)', fontSize: '0.82rem' }}>{fmt(u.last_login)}</td>
                     <td>
-                      <button
-                        onClick={() => toggle(u.id, 'is_admin', u.is_admin)}
-                        className={`badge ${u.is_admin ? 'badge-primary' : 'badge-gray'}`}
-                        style={{ cursor: 'pointer', border: 'none' }}
-                        title={u.is_admin ? 'Klik om te verwijderen' : 'Klik om te maken'}
-                      >
-                        {u.is_admin ? 'Ja' : 'Nee'}
-                      </button>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {u.is_admin && <span className="badge badge-primary">Beheerder</span>}
+                        {u.is_teacher && <span className="badge badge-blue">Docent</span>}
+                        {!u.is_admin && !u.is_teacher && <span className="badge badge-gray">Leerling</span>}
+                      </div>
                     </td>
                     <td>
-                      <button
-                        onClick={() => toggle(u.id, 'is_teacher', u.is_teacher)}
-                        className={`badge ${u.is_teacher ? 'badge-blue' : 'badge-gray'}`}
-                        style={{ cursor: 'pointer', border: 'none' }}
-                        title={u.is_teacher ? 'Klik om te verwijderen' : 'Klik om te maken'}
-                      >
-                        {u.is_teacher ? 'Ja' : 'Nee'}
-                      </button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setEditingUserId(u.id)}>Bewerken</button>
                     </td>
                   </tr>
                 ))}
@@ -419,6 +475,15 @@ export default function Beheer() {
             ))}
           </div>
         </div>
+      )}
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => setEditingUserId(null)}
+          onToggle={toggle}
+          onReset={resetProfile}
+        />
       )}
     </>
   )

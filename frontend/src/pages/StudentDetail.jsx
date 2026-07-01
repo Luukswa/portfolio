@@ -97,7 +97,6 @@ export default function StudentDetail() {
   const [werkstukken, setWerkstukken] = useState(null)
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [lightbox, setLightbox] = useState(null) // { urls, initialIndex, title }
-  const [resetting, setResetting] = useState(false)
 
   useEffect(() => {
     if (user && !user.is_teacher && !user.is_admin) { navigate('/'); return }
@@ -125,18 +124,6 @@ export default function StudentDetail() {
     }).catch(() => {})
   }, [user, id])
 
-  async function resetProfile() {
-    if (!window.confirm(`Profiel van ${studentName || `leerling #${id}`} resetten? Alle 'Over mij' gegevens worden gewist.`)) return
-    setResetting(true)
-    try {
-      const res = await fetch(`/api/admin/users/${id}/profile/reset`, { method: 'POST' })
-      if (res.ok) {
-        setProfile(p => ({ ...p, name: '', title: '', bio: '', skills: [], hobbies: [], subjects: [], avatar_url: '' }))
-        setAvatarUrl(null)
-      }
-    } finally { setResetting(false) }
-  }
-
   const loaded = profile && grades && goals && cv && refs && werkstukken
 
   if (!loaded) return <div className="empty-state">Laden…</div>
@@ -163,11 +150,6 @@ export default function StudentDetail() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          {user?.is_admin && (
-            <button className="btn btn-ghost" onClick={resetProfile} disabled={resetting} style={{ color: 'var(--red)' }}>
-              {resetting ? 'Resetten…' : 'Profiel resetten'}
-            </button>
-          )}
           <button className="btn btn-ghost" onClick={() => navigate('/overzicht')}>← Terug</button>
         </div>
       </div>
