@@ -31,7 +31,8 @@ export default function Layout() {
           {logoUrl && <img src={logoUrl} alt="" className="login-logo-img" />}
           <div className="login-logo">{appName}</div>
           <div className="login-org">OSG Twente</div>
-          <div className="login-sub">Open deze app via het portaal.</div>
+          <div className="login-sub">Open deze app via het portaal, of log direct in.</div>
+          <a href="/api/auth/login" className="btn btn-primary btn-full">Inloggen met Microsoft</a>
         </div>
       </div>
     )
