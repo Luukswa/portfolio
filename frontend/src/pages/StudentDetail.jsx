@@ -83,6 +83,49 @@ function cijferColor(c) {
   return 'badge-red'
 }
 
+function FeedbackBox({ items, teacherId, isAdmin, onAdd, onDelete }) {
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+
+  async function submit() {
+    if (!text.trim()) return
+    setSending(true)
+    try {
+      await onAdd(text.trim())
+      setText('')
+    } finally { setSending(false) }
+  }
+
+  return (
+    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {items.map(f => (
+        <div key={f.id} style={{ background: 'var(--amber-dim)', borderRadius: '6px', padding: '8px 11px', display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' }}>
+          <div>
+            <strong style={{ display: 'block', fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--amber)', opacity: 0.8, marginBottom: '3px' }}>
+              {f.teacher_name}
+            </strong>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.body}</span>
+          </div>
+          {(isAdmin || f.teacher_id === teacherId) && (
+            <button onClick={() => onDelete(f.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, lineHeight: 1, fontSize: '1rem', flexShrink: 0 }}>×</button>
+          )}
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <input
+          className="edit-input"
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit()}
+          placeholder="Feedback toevoegen…"
+          style={{ fontSize: '0.85rem' }}
+        />
+        <button className="btn btn-ghost btn-sm" onClick={submit} disabled={sending || !text.trim()}>{sending ? '…' : 'Versturen'}</button>
+      </div>
+    </div>
+  )
+}
+
 export default function StudentDetail() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -95,6 +138,7 @@ export default function StudentDetail() {
   const [cv, setCv]             = useState(null)
   const [refs, setRefs]         = useState(null)
   const [werkstukken, setWerkstukken] = useState(null)
+  const [feedback, setFeedback] = useState([])
   const [avatarUrl, setAvatarUrl] = useState(null)
   const [lightbox, setLightbox] = useState(null) // { urls, initialIndex, title }
 
@@ -109,7 +153,8 @@ export default function StudentDetail() {
       fetch(`/api/teacher/students/${id}/cv`).then(r => r.json()),
       fetch(`/api/teacher/students/${id}/referenties`).then(r => r.json()),
       fetch(`/api/teacher/students/${id}/werkstukken`).then(r => r.json()),
-    ]).then(([p, g, go, c, rf, wk]) => {
+      fetch(`/api/teacher/students/${id}/feedback`).then(r => r.json()),
+    ]).then(([p, g, go, c, rf, wk, fb]) => {
       setStudentName(p.display_name || '')
       setProfile(p)
       setGrades(g)
@@ -117,12 +162,30 @@ export default function StudentDetail() {
       setCv(c)
       setRefs(rf)
       setWerkstukken(wk)
+      setFeedback(fb)
     }).catch(() => {})
 
     fetch(`/api/profile/avatar/${id}`).then(r => {
       if (r.ok) setAvatarUrl(`/api/profile/avatar/${id}`)
     }).catch(() => {})
   }, [user, id])
+
+  async function addFeedback(targetType, targetId, body) {
+    const res = await fetch(`/api/teacher/students/${id}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_type: targetType, target_id: targetId, body }),
+    })
+    if (res.ok) {
+      const created = await res.json()
+      setFeedback(fb => [...fb, created])
+    }
+  }
+
+  async function deleteFeedback(feedbackId) {
+    await fetch(`/api/teacher/feedback/${feedbackId}`, { method: 'DELETE' })
+    setFeedback(fb => fb.filter(f => f.id !== feedbackId))
+  }
 
   const loaded = profile && grades && goals && cv && refs && werkstukken
 
@@ -223,6 +286,13 @@ export default function StudentDetail() {
                 <span style={{ fontSize: '0.83rem', color: 'var(--text-soft)' }}>{g.nodig}</span>
               </div>
             )}
+            <FeedbackBox
+              items={feedback.filter(f => f.target_type === 'goal' && f.target_id === g.id)}
+              teacherId={user?.id}
+              isAdmin={user?.is_admin}
+              onAdd={body => addFeedback('goal', g.id, body)}
+              onDelete={deleteFeedback}
+            />
           </div>
         ))}
       </Section>
@@ -267,6 +337,13 @@ export default function StudentDetail() {
                     {w.vak && <div style={{ fontWeight: 600, marginBottom: '3px' }}>{w.vak}</div>}
                     {w.datum && <div style={{ color: 'var(--text-soft)' }}>{w.datum}</div>}
                     {w.trots_omdat && <div style={{ color: 'var(--text-soft)', marginTop: '4px', lineHeight: 1.4 }}>{w.trots_omdat}</div>}
+                    <FeedbackBox
+                      items={feedback.filter(f => f.target_type === 'werkstuk' && f.target_id === w.id)}
+                      teacherId={user?.id}
+                      isAdmin={user?.is_admin}
+                      onAdd={body => addFeedback('werkstuk', w.id, body)}
+                      onDelete={deleteFeedback}
+                    />
                   </div>
                 </div>
               )

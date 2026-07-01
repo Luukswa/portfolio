@@ -91,9 +91,27 @@ function FotoGrid({ fotos, editing, onAdd, onDelete }) {
   )
 }
 
+// ── Feedback ──────────────────────────────────────────────────────────────────
+
+function FeedbackList({ items }) {
+  if (!items.length) return null
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {items.map(f => (
+        <div key={f.id} style={{ background: 'var(--amber-dim)', borderRadius: '6px', padding: '8px 11px' }}>
+          <strong style={{ display: 'block', fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--amber)', opacity: 0.8, marginBottom: '3px' }}>
+            Feedback van {f.teacher_name}
+          </strong>
+          <span style={{ fontSize: '0.875rem', color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.body}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Werkstuk card ─────────────────────────────────────────────────────────────
 
-function WerkstukCard({ item, onSaved, onDeleted }) {
+function WerkstukCard({ item, feedback, onSaved, onDeleted }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm]       = useState({ vak: item.vak, gemaakt_bij: item.gemaakt_bij, datum: item.datum, trots_omdat: item.trots_omdat })
   const [fotos, setFotos]     = useState(item.fotos || [])
@@ -175,6 +193,7 @@ function WerkstukCard({ item, onSaved, onDeleted }) {
             {!item.trots_omdat && !item.gemaakt_bij && fotos.length === 0 && (
               <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>Nog niet ingevuld.</div>
             )}
+            <FeedbackList items={feedback} />
             <div style={{ display: 'flex', gap: '6px' }}>
               <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>Bewerken</button>
               <button className="btn btn-danger btn-sm" onClick={() => onDeleted(item.id)}>Verwijderen</button>
@@ -300,11 +319,13 @@ function AddForm({ onAdded, onCancel }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Werkstukken() {
-  const [items, setItems]   = useState(null)
-  const [adding, setAdding] = useState(false)
+  const [items, setItems]     = useState(null)
+  const [feedback, setFeedback] = useState([])
+  const [adding, setAdding]   = useState(false)
 
   useEffect(() => {
     fetch('/api/werkstukken').then(r => r.json()).then(setItems).catch(() => {})
+    fetch('/api/feedback').then(r => r.json()).then(setFeedback).catch(() => {})
   }, [])
 
   async function remove(id) {
@@ -330,6 +351,7 @@ export default function Werkstukken() {
           <WerkstukCard
             key={item.id}
             item={item}
+            feedback={feedback.filter(f => f.target_type === 'werkstuk' && f.target_id === item.id)}
             onSaved={updated => setItems(it => it.map(x => x.id === updated.id ? updated : x))}
             onDeleted={remove}
           />

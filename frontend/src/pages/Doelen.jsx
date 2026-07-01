@@ -12,7 +12,23 @@ function Section({ label, text, bg, color }) {
   )
 }
 
-function GoalCard({ goal, onDelete, onSave }) {
+function FeedbackList({ items }) {
+  if (!items.length) return null
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {items.map(f => (
+        <div key={f.id} style={{ background: 'var(--amber-dim)', borderRadius: '6px', padding: '8px 11px' }}>
+          <strong style={{ display: 'block', fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--amber)', opacity: 0.8, marginBottom: '3px' }}>
+            Feedback van {f.teacher_name}
+          </strong>
+          <span style={{ fontSize: '0.875rem', color: 'var(--text)', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{f.body}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function GoalCard({ goal, feedback, onDelete, onSave }) {
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ doel: goal.doel, wil_leren: goal.wil_leren, nodig: goal.nodig })
   const [saving, setSaving] = useState(false)
@@ -64,6 +80,7 @@ function GoalCard({ goal, onDelete, onSave }) {
           </div>
           <Section label="Wat ik wil leren"       text={goal.wil_leren} bg="var(--primary-dim)"  color="var(--primary-dark)" />
           <Section label="Wat ik daarvoor nodig heb" text={goal.nodig}  bg="var(--green-dim)"    color="var(--green)" />
+          <FeedbackList items={feedback} />
         </>
       )}
     </div>
@@ -72,6 +89,7 @@ function GoalCard({ goal, onDelete, onSave }) {
 
 export default function Doelen() {
   const [goals, setGoals] = useState(null)
+  const [feedback, setFeedback] = useState([])
   const [form, setForm] = useState(EMPTY)
   const [adding, setAdding] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -81,6 +99,10 @@ export default function Doelen() {
     fetch('/api/goals')
       .then(r => r.json())
       .then(setGoals)
+      .catch(() => {})
+    fetch('/api/feedback')
+      .then(r => r.json())
+      .then(setFeedback)
       .catch(() => {})
   }, [])
 
@@ -168,7 +190,13 @@ export default function Doelen() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {goals.map(g => (
-            <GoalCard key={g.id} goal={g} onDelete={remove} onSave={save} />
+            <GoalCard
+              key={g.id}
+              goal={g}
+              feedback={feedback.filter(f => f.target_type === 'goal' && f.target_id === g.id)}
+              onDelete={remove}
+              onSave={save}
+            />
           ))}
         </div>
       )}
