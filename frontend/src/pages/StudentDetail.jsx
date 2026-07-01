@@ -97,18 +97,23 @@ function FeedbackBox({ items, teacherId, isAdmin, onAdd, onDelete }) {
   }
 
   return (
-    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       {items.map(f => (
-        <div key={f.id} style={{ background: 'var(--amber-dim)', borderRadius: '6px', padding: '8px 11px', display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' }}>
-          <div>
-            <strong style={{ display: 'block', fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--amber)', opacity: 0.8, marginBottom: '3px' }}>
-              {f.teacher_name}
-            </strong>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.body}</span>
+        <div key={f.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+          <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, fontFamily: 'var(--title)', flexShrink: 0 }}>
+            {f.teacher_name?.[0]?.toUpperCase() ?? '?'}
           </div>
-          {(isAdmin || f.teacher_id === teacherId) && (
-            <button onClick={() => onDelete(f.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, lineHeight: 1, fontSize: '1rem', flexShrink: 0 }}>×</button>
-          )}
+          <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', borderTopLeftRadius: '3px', padding: '7px 11px', flex: 1, display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-soft)', marginBottom: '2px' }}>
+                {f.teacher_name} <span style={{ fontWeight: 400, color: 'var(--text-dim)' }}>· docent</span>
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{f.body}</div>
+            </div>
+            {(isAdmin || f.teacher_id === teacherId) && (
+              <button onClick={() => onDelete(f.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', padding: 0, lineHeight: 1, fontSize: '1rem', flexShrink: 0 }}>×</button>
+            )}
+          </div>
         </div>
       ))}
       <div style={{ display: 'flex', gap: '6px' }}>
