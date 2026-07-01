@@ -17,6 +17,7 @@ export default function OverMij() {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const [uploading, setUploading] = useState(false)
   const [wizardActive, setWizardActive] = useState(false)
   const [wizardStep, setWizardStep] = useState(1)
@@ -48,11 +49,14 @@ export default function OverMij() {
   function startEdit() {
     setDraft(JSON.parse(JSON.stringify(profile)))
     setNewSkill(''); setNewHobbyLabel(''); setNewSubject('')
+    setError('')
     setEditing(true)
   }
-  function cancel() { setDraft(null); setEditing(false) }
+  function cancel() { setDraft(null); setEditing(false); setError('') }
 
   async function save() {
+    if (!draft.name.trim()) { setError('Naam is verplicht.'); return }
+    setError('')
     setSaving(true)
     try {
       const res = await fetch('/api/profile', {
@@ -60,6 +64,7 @@ export default function OverMij() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draft),
       })
+      const body = await res.json().catch(() => ({}))
       if (res.ok) {
         setProfile(prev => ({ ...prev, ...draft }))
         setDraft(null)
@@ -67,6 +72,8 @@ export default function OverMij() {
         if (wizardActive) {
           setWizardActive(false)
         }
+      } else {
+        setError(body.error || 'Er ging iets mis.')
       }
     } finally { setSaving(false) }
   }
@@ -202,7 +209,7 @@ export default function OverMij() {
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-soft)', display: 'block', marginBottom: '4px' }}>Naam</label>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-soft)', display: 'block', marginBottom: '4px' }}>Naam *</label>
                     <input className="edit-input" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="Jouw naam" autoFocus />
                   </div>
                   <div>
@@ -286,12 +293,22 @@ export default function OverMij() {
 
         {/* Navigation */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
-          <button className="btn btn-ghost" onClick={() => isLast ? save() : setWizardStep(s => s + 1)} disabled={saving} style={{ fontSize: '0.85rem' }}>
+          <button
+            className="btn btn-ghost"
+            onClick={() => isLast ? save() : setWizardStep(s => s + 1)}
+            disabled={saving || (isFirst && !draft.name.trim())}
+            style={{ fontSize: '0.85rem' }}
+          >
             {isLast ? 'Overslaan & opslaan' : 'Stap overslaan'}
           </button>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {error && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{error}</span>}
             {!isFirst && <button className="btn btn-ghost" onClick={() => setWizardStep(s => s - 1)} disabled={saving}>← Terug</button>}
-            <button className="btn btn-primary" onClick={() => isLast ? save() : setWizardStep(s => s + 1)} disabled={saving}>
+            <button
+              className="btn btn-primary"
+              onClick={() => isLast ? save() : setWizardStep(s => s + 1)}
+              disabled={saving || (isFirst && !draft.name.trim())}
+            >
               {saving ? 'Opslaan…' : isLast ? '✓ Klaar!' : 'Volgende →'}
             </button>
           </div>
@@ -311,11 +328,12 @@ export default function OverMij() {
           <h2>Over mij</h2>
           <div className="subtitle">Een korte introductie</div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {editing ? (
             <>
+              {error && <span style={{ color: 'var(--red)', fontSize: '0.8rem' }}>{error}</span>}
               <button className="btn btn-ghost" onClick={cancel} disabled={saving}>Annuleren</button>
-              <button className="btn btn-primary" onClick={save} disabled={saving}>
+              <button className="btn btn-primary" onClick={save} disabled={saving || !draft.name.trim()}>
                 {saving ? 'Opslaan…' : 'Opslaan'}
               </button>
             </>
@@ -390,7 +408,7 @@ export default function OverMij() {
                     className="edit-input"
                     value={draft.name}
                     onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-                    placeholder="Jouw naam"
+                    placeholder="Jouw naam *"
                     style={{ marginBottom: '8px', fontFamily: 'var(--title)', fontWeight: 700, fontSize: '1.1rem' }}
                   />
                   <input

@@ -100,6 +100,8 @@ def get_profile():
 def save_profile():
     user_id = session['user']['id']
     data = request.get_json(force=True)
+    if not data.get('name', '').strip():
+        return jsonify({'error': 'Naam is verplicht'}), 400
     conn = get_conn()
     try:
         with conn.cursor() as cur:
