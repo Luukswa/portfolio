@@ -11,6 +11,7 @@ import Doelen from './pages/Doelen'
 import CV from './pages/CV'
 import Referenties from './pages/Referenties'
 import Werkstukken from './pages/Werkstukken'
+import Hulp from './pages/Hulp'
 import Overzicht from './pages/Overzicht'
 import StudentDetail from './pages/StudentDetail'
 
@@ -29,6 +30,7 @@ export default function App() {
               <Route path="/mijn-cv" element={<CV />} />
               <Route path="/mijn-referenties" element={<Referenties />} />
               <Route path="/mijn-werkstukken" element={<Werkstukken />} />
+              <Route path="/hulp" element={<Hulp />} />
               <Route path="/overzicht" element={<Overzicht />} />
               <Route path="/overzicht/:id" element={<StudentDetail />} />
             </Route>
