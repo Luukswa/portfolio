@@ -80,8 +80,8 @@ function ReferentieCard({ item, onSaved, onDeleted }) {
         </>
       ) : (
         <>
-          {item.type && <div className="section-title" style={{ marginTop: 0 }}>{item.type}</div>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {item.type && <div className="section-title" style={{ marginTop: 0, fontSize: '0.92rem' }}>{item.type}</div>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {item.naam && <Row label="Naam" value={item.naam} />}
             {item.datum && <Row label="Datum" value={item.datum} />}
             {item.vak && <Row label="Vak" value={item.vak} />}
@@ -90,7 +90,7 @@ function ReferentieCard({ item, onSaved, onDeleted }) {
               <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>Nog niet ingevuld.</div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: '6px', marginTop: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
             <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>Bewerken</button>
             <button className="btn btn-danger btn-sm" onClick={() => onDeleted(item.id)}>Verwijderen</button>
           </div>
@@ -158,7 +158,7 @@ export default function Referenties() {
         {!adding && <button className="btn btn-primary" onClick={() => setAdding(true)}>+ Referentie toevoegen</button>}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '16px' }}>
         {adding && <AddForm onAdded={item => { setRefs(rs => [...rs, item]); setAdding(false) }} onCancel={() => setAdding(false)} />}
         {refs.map(ref => (
           <ReferentieCard
