@@ -49,21 +49,59 @@ def get_referenties():
         put_conn(conn)
 
 
-@referenties_bp.route('/api/referenties', methods=['PUT'])
+@referenties_bp.route('/api/referenties', methods=['POST'])
 @require_auth
-def save_referenties():
+def add_referentie():
     user_id = session['user']['id']
-    items = request.get_json(force=True)
+    item = request.get_json(force=True)
     conn = get_conn()
     try:
         with conn.cursor() as cur:
             _ensure_table(cur)
-            cur.execute("DELETE FROM referenties WHERE user_id = %s", (user_id,))
-            for item in items:
-                cur.execute(
-                    "INSERT INTO referenties (user_id, type, naam, datum, vak, opmerking) VALUES (%s, %s, %s, %s, %s, %s)",
-                    (user_id, item.get('type', ''), item.get('naam', ''), item.get('datum', ''), item.get('vak', ''), item.get('opmerking', '')),
-                )
+            cur.execute(
+                """
+                INSERT INTO referenties (user_id, type, naam, datum, vak, opmerking)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
+                (user_id, item.get('type', ''), item.get('naam', ''), item.get('datum', ''), item.get('vak', ''), item.get('opmerking', '')),
+            )
+            new_id = cur.fetchone()[0]
+            conn.commit()
+        return jsonify({
+            'id': new_id, 'type': item.get('type', ''), 'naam': item.get('naam', ''),
+            'datum': item.get('datum', ''), 'vak': item.get('vak', ''), 'opmerking': item.get('opmerking', ''),
+        }), 201
+    finally:
+        put_conn(conn)
+
+
+@referenties_bp.route('/api/referenties/<int:ref_id>', methods=['PUT'])
+@require_auth
+def update_referentie(ref_id):
+    user_id = session['user']['id']
+    item = request.get_json(force=True)
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE referenties SET type=%s, naam=%s, datum=%s, vak=%s, opmerking=%s WHERE id=%s AND user_id=%s",
+                (item.get('type', ''), item.get('naam', ''), item.get('datum', ''), item.get('vak', ''), item.get('opmerking', ''), ref_id, user_id),
+            )
+            conn.commit()
+        return jsonify({'ok': True})
+    finally:
+        put_conn(conn)
+
+
+@referenties_bp.route('/api/referenties/<int:ref_id>', methods=['DELETE'])
+@require_auth
+def delete_referentie(ref_id):
+    user_id = session['user']['id']
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM referenties WHERE id=%s AND user_id=%s", (ref_id, user_id))
             conn.commit()
         return jsonify({'ok': True})
     finally:

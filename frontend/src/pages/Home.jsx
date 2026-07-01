@@ -90,11 +90,11 @@ export default function Home() {
       getArr('/api/goals'),
       getArr('/api/werkstukken'),
       get('/api/cv',          null),
-      get('/api/referenties', null),
+      getArr('/api/referenties'),
     ]).then(([profile, grades, goals, werkstukken, cv, refs]) =>
       setData({ profile, grades, goals, werkstukken, cv, refs })
     ).catch(() =>
-      setData({ profile: null, grades: [], goals: [], werkstukken: [], cv: null, refs: null })
+      setData({ profile: null, grades: [], goals: [], werkstukken: [], cv: null, refs: [] })
     )
     fetch(`/api/profile/avatar/${user.id}`).then(r => {
       if (r.ok) setAvatar(`/api/profile/avatar/${user.id}`)
@@ -113,8 +113,6 @@ export default function Home() {
   const avg     = grades.length ? (grades.reduce((s, g) => s + g.cijfer, 0) / grades.length) : null
   const avgStr  = avg ? avg.toFixed(1) : '—'
   const cvDone  = cv ? [cv.naam, cv.adres, cv.postcode, cv.telefoon, cv.email].filter(Boolean).length : 0
-  const ref1ok  = !!(refs?.ref1?.naam || refs?.ref1?.datum)
-  const ref2ok  = !!(refs?.ref2?.naam || refs?.ref2?.datum)
 
   const recentGrades = [...grades]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -279,18 +277,16 @@ export default function Home() {
 
         {/* Referenties */}
         <Panel title="Referenties" to="/mijn-referenties">
-          {!ref1ok && !ref2ok ? <Dim text="Nog geen referenties ingevuld." /> : (
+          {refs.length === 0 ? <Dim text="Nog geen referenties ingevuld." /> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {[{ label: 'Vakleerkracht', ref: refs.ref1, ok: ref1ok }, { label: 'Stageleerkracht', ref: refs.ref2, ok: ref2ok }]
-                .filter(r => r.ok)
-                .map(({ label, ref }) => (
-                  <div key={label}>
-                    <div style={{ fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', marginBottom: '4px' }}>{label}</div>
-                    {ref.naam  && <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{ref.naam}</div>}
-                    {ref.vak   && <div style={{ fontSize: '0.82rem', color: 'var(--text-soft)' }}>{ref.vak}</div>}
-                    {ref.datum && <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '2px' }}>{ref.datum}</div>}
-                  </div>
-                ))}
+              {refs.slice(0, 3).map(ref => (
+                <div key={ref.id}>
+                  {ref.type && <div style={{ fontSize: '0.68rem', fontFamily: 'var(--title)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-dim)', marginBottom: '4px' }}>{ref.type}</div>}
+                  {ref.naam  && <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text)' }}>{ref.naam}</div>}
+                  {ref.vak   && <div style={{ fontSize: '0.82rem', color: 'var(--text-soft)' }}>{ref.vak}</div>}
+                  {ref.datum && <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '2px' }}>{ref.datum}</div>}
+                </div>
+              ))}
             </div>
           )}
         </Panel>
